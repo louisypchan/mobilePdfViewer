@@ -13,13 +13,15 @@ export class PdfViewerComponent implements OnInit, AfterViewInit {
   pdf: any;
   pages: any[];
   currentPage: 1; //
-  scale: 0; // unknown
+  unit: number;
+  scale: number; // unknown
   // @ts-ignore
   @ViewChild('pdfViewer') pdfViewer: ElementRef;
 
   constructor() { }
 
   ngOnInit() {
+    this.unit = 96.0 / 72.0;
   }
 
   ngAfterViewInit(): void {
@@ -51,6 +53,10 @@ export class PdfViewerComponent implements OnInit, AfterViewInit {
     // Fetch a single page so we can get a viewport that will be the default
     // viewport for all pages
     firstPagePromise.then(pdfPage => {
+      const viewport = pdfPage.getViewport({ scale: 96.0 / 72.0, });
+      if (this.scale === 0) {
+        this.scale = (this.pdfViewer.nativeElement.clientWidth - 20) / viewport.width;
+      }
       // Fetch all the pages since the viewport is needed before printing
       // starts to create the correct size canvas. Wait until one page is
       // rendered so we don't tie up too many resources early on.
