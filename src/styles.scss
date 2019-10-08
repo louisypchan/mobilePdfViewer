@@ -1,0 +1,27 @@
+/* You can add global styles to this file, and also import other style files */
+body {
+  top: 0;
+  bottom: 0;
+  position: fixed;
+  width: 100%;
+  overflow: hidden !important;
+  height: 100%;
+}
+
+.dark {
+  background: #2e323a;
+}
+
+.ps {
+  overflow-y: scroll;
+  overflow-x: hidden;
+}
+
+.sv {
+  width: 100%;
+  .page {
+    position: relative;
+    margin: 8px auto 0 auto;
+    box-shadow: rgba(0, 0, 0, 0.4) 0px 1px 3px 0px;
+  }
+}
