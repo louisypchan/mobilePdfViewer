@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, ElementRef, Input, OnInit, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, Input, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import * as pdfjsLib from 'pdfjs-dist/webpack';
 import { Page } from '../_model/Page';
 import { PdfService } from '../_service/pdf.service';
@@ -8,7 +8,7 @@ import { PdfService } from '../_service/pdf.service';
   templateUrl: './pdf-viewer.component.html',
   styleUrls: ['./pdf-viewer.component.scss']
 })
-export class PdfViewerComponent implements OnInit, AfterViewInit {
+export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
 
   @Input() file: string;
   @Input() renderType: string;
@@ -29,7 +29,16 @@ export class PdfViewerComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit(): void {
+    this.pdfService.renderHighestPriority.subscribe({
+      next: () => {
+        this.renderHighestPriority(null);
+      }
+    });
     this.initPdfViewer();
+  }
+
+  ngOnDestroy(): void {
+    this.pdfService.renderHighestPriority.unsubscribe();
   }
 
   private reset() {
@@ -52,7 +61,7 @@ export class PdfViewerComponent implements OnInit, AfterViewInit {
     this.pagesCount = this.pdfService.pdf.numPages;
     const pagesCapability = pdfjsLib.createPromiseCapability();
     pagesCapability.promise.then(() => {
-      //
+      // pagesloaded
       // console.log(this.pages);
     });
     const onePageRenderedCapability = pdfjsLib.createPromiseCapability();
@@ -71,11 +80,24 @@ export class PdfViewerComponent implements OnInit, AfterViewInit {
           renderingState: 0
         });
       }
+      this.pdfService.onAfterDraw.subscribe({
+        next: () => {
+          onePageRenderedCapability.resolve();
+          this.pdfService.onAfterDraw.unsubscribe();
+          this.pdfService.onAfterDraw = null;
+        }
+      });
       // Fetch all the pages since the viewport is needed before printing
       // starts to create the correct size canvas. Wait until one page is
       // rendered so we don't tie up too many resources early on.
       onePageRenderedCapability.promise.then(() => {
         // disableAutoFetch ??
+        // console.log(this.pdfService.pdf.loadingParams.disableAutoFetch);
+        if (this.pdfService.pdf.loadingParams.disableAutoFetch) {
+          // XXX: Printing is semi-broken with auto fetch disabled.
+          pagesCapability.resolve();
+          return;
+        }
         let getPagesLeft = this.pagesCount;
         for (let pageNum = 1; pageNum <= this.pagesCount; ++pageNum) {
           //
@@ -200,7 +222,7 @@ export class PdfViewerComponent implements OnInit, AfterViewInit {
   private getHighestPriorityIndex(visible) {
     let index = -1;
     visible.pages.every(p => {
-      if (this.pages[p.index].renderingState !== 3) {
+      if (this.pages[p.index].renderingState === 0) {
         index = p.index;
         return false;
       }
@@ -221,6 +243,9 @@ export class PdfViewerComponent implements OnInit, AfterViewInit {
     const loadingTask = pdfjsLib.getDocument({
       url: this.file,
       cMapPacked: true,
+      // disableAutoFetch: true,
+      rangeChunkSize: 1024 * 512,
+      disableStream: true,
       cMapUrl: `assets/cmaps`,
     });
     loadingTask.onProgress = (progressData) => {
@@ -231,5 +256,15 @@ export class PdfViewerComponent implements OnInit, AfterViewInit {
       this.pdfService.pdf = pdfDocument;
       this.initPages();
     });
+  }
+
+  onRendering(id: number) {
+    const index = this.pages.findIndex(page => page.id === id);
+    this.pages[index].renderingState = 1;
+  }
+
+  onRendered(id: number) {
+    const index = this.pages.findIndex(page => page.id === id);
+    this.pages[index].renderingState = 3;
   }
 }

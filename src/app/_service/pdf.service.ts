@@ -1,4 +1,5 @@
 import {Injectable, Input} from '@angular/core';
+import {Subject} from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -12,6 +13,9 @@ export class PdfService {
   private TRANSFORM: any;
 
   private pdfDocument: any;
+
+  public onAfterDraw = new Subject();
+  public renderHighestPriority = new Subject();
 
   constructor() {
     this.TRANSFORM = {};

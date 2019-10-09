@@ -1,6 +1,17 @@
-import {AfterViewInit, Component, ElementRef, Input, OnChanges, OnInit, SimpleChanges} from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  OnChanges,
+  OnInit,
+  Output,
+  SimpleChanges
+} from '@angular/core';
 import {Page} from '../_model/Page';
 import {PdfService} from '../_service/pdf.service';
+import * as pdfjsLib from 'pdfjs-dist/webpack';
 
 @Component({
   selector: 'app-pdf-content',
@@ -11,6 +22,9 @@ export class PdfContentComponent implements OnInit, OnChanges, AfterViewInit {
 
   @Input() type: string;
   @Input() page: Page;
+
+  @Output() rendered = new EventEmitter<number>();
+  @Output() rendering = new EventEmitter<number>();
 
   renderingState: number;
 
@@ -28,36 +42,69 @@ export class PdfContentComponent implements OnInit, OnChanges, AfterViewInit {
 
   private draw() {
     this.renderingState = this.page.renderingState;
-    this.renderingState = 1; // RUNNING
-    this.paintOnCanvas();
-  }
-
-  /**
-   * Returns scale factor for the canvas. It makes sense for the HiDPI displays.
-   */
-  private getOutputScale(ctx) {
-    const devicePixelRatio = window.devicePixelRatio || 1;
-    const backingStoreRatio = ctx.webkitBackingStorePixelRatio || ctx.mozBackingStorePixelRatio ||
-      ctx.msBackingStorePixelRatio || ctx.oBackingStorePixelRatio || ctx.backingStorePixelRatio || 1;
-    const pixelRatio = devicePixelRatio / backingStoreRatio;
-    return {
-      sx: pixelRatio,
-      sy: pixelRatio,
-      scaled: pixelRatio !== 1
-    };
+    if (this.renderingState === 0) {
+      this.renderingState = 1; // RUNNING
+      this.rendering.emit(this.page.id);
+      const paintTask = this.type === 'canvas' ? this.paintOnCanvas() : null;
+      // TODO: support SVG
+      if (paintTask) {
+        const result = paintTask.promise.then(() => {
+          // done with painting
+          this.renderingState = 3;
+          this.rendered.emit(this.page.id);
+        }, reason => {
+        });
+        if (this.pdfService.onAfterDraw) {
+          this.pdfService.onAfterDraw.next();
+        }
+        result.finally(() => {
+          this.pdfService.renderHighestPriority.next();
+        });
+      }
+    }
   }
 
   private paintOnCanvas() {
-    const canvas = this.el.nativeElement.children[0];
-    // canvas.mozOpaque = true;
+    const renderCapability = pdfjsLib.createPromiseCapability();
+    const canvas = this.el.nativeElement.querySelector('canvas');
+    canvas.mozOpaque = true;
     const ctx = canvas.getContext('2d', { alpha: false, });
-    const scale = this.el.nativeElement.offsetWidth / this.page.viewport.width * this.pdfService.scale;
-    const viewport = this.page.viewport.clone( {scale: scale * this.pdfService.CSS_UNIT });
+    canvas.setAttribute('hidden', 'hidden');
+    // TODO: different viewports??
+    let viewport = this.page.pdfPage.getViewport({ scale: this.pdfService.CSS_UNIT});
+    const scale = this.el.nativeElement.offsetWidth / viewport.width * this.pdfService.scale;
+    viewport = this.page.viewport.clone( {scale: scale * this.pdfService.CSS_UNIT });
     canvas.height = this.page.minHeight * this.pdfService.scale;
     canvas.width = this.el.nativeElement.offsetWidth * this.pdfService.scale;
     const renderTask = this.page.pdfPage.render({
       canvasContext: ctx,
       viewport,
     });
+    const result = {
+      promise: renderCapability.promise,
+      onRenderContinue(cont) {
+        cont();
+      },
+      cancel() {
+        renderTask.cancel();
+      },
+    };
+
+    renderTask.onContinue = (cont) => {
+      canvas.removeAttribute('hidden');
+      if (result.onRenderContinue) {
+        result.onRenderContinue(cont);
+      } else {
+        cont();
+      }
+    };
+    renderTask.promise.then(() => {
+      canvas.removeAttribute('hidden');
+      renderCapability.resolve();
+    }, error => {
+      canvas.removeAttribute('hidden');
+      renderCapability.reject(error);
+    });
+    return result;
   }
 }

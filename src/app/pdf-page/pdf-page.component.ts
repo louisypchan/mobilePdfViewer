@@ -1,4 +1,4 @@
-import {Component, Input, OnChanges, OnInit, SimpleChanges} from '@angular/core';
+import {Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges} from '@angular/core';
 import {PdfService} from '../_service/pdf.service';
 
 @Component({
@@ -10,6 +10,8 @@ export class PdfPageComponent implements OnInit, OnChanges {
 
   @Input() pages: any[];
   @Input() type: string;
+  @Output() rendered = new EventEmitter<number>();
+  @Output() rendering = new EventEmitter<number>();
 
   constructor(private pdfService: PdfService) { }
 
@@ -19,6 +21,14 @@ export class PdfPageComponent implements OnInit, OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     if ('pages' in changes) {
     }
+  }
+
+  onRendering(id: number) {
+    this.rendering.emit(id);
+  }
+
+  onRendered(id: number) {
+    this.rendered.emit(id);
   }
 
 }
