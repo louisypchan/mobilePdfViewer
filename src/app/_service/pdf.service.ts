@@ -7,6 +7,7 @@ import {Subject} from 'rxjs';
 export class PdfService {
 
   public CSS_UNIT = 96.0 / 72.0;
+  public areaWidth = window.innerWidth - 16;
 
   private SCALE: number;
 

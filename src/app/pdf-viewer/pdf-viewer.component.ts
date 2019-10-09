@@ -1,7 +1,7 @@
 import {AfterViewInit, Component, ElementRef, Input, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import * as pdfjsLib from 'pdfjs-dist/webpack';
-import { Page } from '../_model/Page';
-import { PdfService } from '../_service/pdf.service';
+import {Page} from '../_model/Page';
+import {PdfService} from '../_service/pdf.service';
 
 @Component({
   selector: 'app-pdf-viewer',
@@ -71,7 +71,7 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
     // viewport for all pages
     firstPagePromise.then(pdfPage => {
       const viewport = pdfPage.getViewport({ scale: this.pdfService.CSS_UNIT, });
-      const minHeight = (this.pdfViewer.nativeElement.clientWidth - 16) * viewport.height / viewport.width;
+      const minHeight = this.pdfService.areaWidth * viewport.height / viewport.width;
       for (let pageNum = 1; pageNum <= this.pagesCount; ++pageNum) {
         this.pages.push({
           id: pageNum,
@@ -103,6 +103,10 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
           //
           this.pdfService.pdf.getPage(pageNum).then(page => {
             const index = this.pages.findIndex(p => p.id === pageNum);
+            const vp = page.getViewport({scale: this.pdfService.CSS_UNIT});
+            if (vp.height / this.pages[index].viewport.height !== 1) {
+              this.pages[index].minHeight = vp.height;
+            }
             if (!this.pages[index].pdfPage) {
               this.pages[index].pdfPage = page;
             }
@@ -206,7 +210,7 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
     // starts from 1, so need to add 1
-    const promise = this.pdfService.pdf.getPage(pageIndex + 1).then(pdfPage => {
+    this.pagesRequests[pageIndex] = this.pdfService.pdf.getPage(pageIndex + 1).then(pdfPage => {
       if (!this.pages[pageIndex].pdfPage) {
         this.pages[pageIndex].pdfPage = pdfPage;
       }
@@ -216,7 +220,6 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
       // Page error -- there is nothing can be done.
       this.pagesRequests[pageIndex] = null;
     });
-    this.pagesRequests[pageIndex] = promise;
   }
 
   private getHighestPriorityIndex(visible) {
@@ -244,9 +247,9 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
       url: this.file,
       cMapPacked: true,
       // disableAutoFetch: true,
-      rangeChunkSize: 1024 * 512,
-      disableStream: true,
-      cMapUrl: `assets/cmaps`,
+      // rangeChunkSize: 1024 * 512,
+      // disableStream: true,
+      // cMapUrl: `assets/cmaps`,
     });
     loadingTask.onProgress = (progressData) => {
       console.log(progressData);
