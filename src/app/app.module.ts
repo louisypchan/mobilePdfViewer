@@ -6,13 +6,15 @@ import { AppComponent } from './app.component';
 import { SvComponent } from './sv/sv.component';
 import { PdfViewerComponent } from './pdf-viewer/pdf-viewer.component';
 import { PdfPageComponent } from './pdf-page/pdf-page.component';
+import { PdfContentComponent } from './pdf-content/pdf-content.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     SvComponent,
     PdfViewerComponent,
-    PdfPageComponent
+    PdfPageComponent,
+    PdfContentComponent
   ],
   imports: [
     BrowserModule,

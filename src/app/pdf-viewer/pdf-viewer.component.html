@@ -1,5 +1,5 @@
 <div class="viewer">
-  <div #pdfViewer class="pdfViewer">
-    <app-pdf-page [pages]="pages"></app-pdf-page>
+  <div #pdfViewer class="pdfViewer" [ngStyle]="pdfService.transform">
+    <app-pdf-page [pages]="pages" [type]="renderType"></app-pdf-page>
   </div>
 </div>

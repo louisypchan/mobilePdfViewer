@@ -1,3 +1,3 @@
-<div class="page" *ngFor="let page of pages">
-  ddd
+<div class="page" *ngFor="let page of pages" [ngStyle]="{minHeight: page.minHeight + 18 + 'px'}">
+  <app-pdf-content class="content" [type]="type" [page]="page" *ngIf="page.pdfPage"></app-pdf-content>
 </div>
