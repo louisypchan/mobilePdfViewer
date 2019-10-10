@@ -13,7 +13,7 @@ export class PdfPageComponent implements OnInit, OnChanges {
   @Output() rendered = new EventEmitter<number>();
   @Output() rendering = new EventEmitter<number>();
 
-  constructor(private pdfService: PdfService) { }
+  constructor(public pdfService: PdfService) { }
 
   ngOnInit() {
   }

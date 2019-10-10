@@ -1,12 +1,14 @@
 .page {
   position: relative;
-  margin: 0 auto -9px auto;
-  border: 9px solid transparent;
-  border-image: url(../../assets/images/shadow.png) 9 9 repeat;
+  margin-bottom: 5px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
 
   .content {
-    min-width: 100%;
-    min-height: 100%;
+    //min-width: 100%;
+    //min-height: 100%;
     position: absolute;
     overflow: hidden;
   }

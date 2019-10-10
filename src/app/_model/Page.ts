@@ -1,6 +1,7 @@
 export interface Page {
   id: number;
   minHeight: number;
+  minWidth: number;
   pdfPage?: any;
   viewport: any;
   /*

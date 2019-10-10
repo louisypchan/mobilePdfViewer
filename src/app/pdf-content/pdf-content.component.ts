@@ -22,46 +22,64 @@ export class PdfContentComponent implements OnInit, OnChanges, AfterViewInit {
 
   @Input() type: string;
   @Input() page: Page;
-
+  @Input() scale: number;
   @Output() rendered = new EventEmitter<number>();
   @Output() rendering = new EventEmitter<number>();
 
+  ready: boolean;
+  paintTask: any;
   renderingState: number;
 
   constructor(private el: ElementRef, private pdfService: PdfService) { }
 
   ngOnInit() {
+    this.ready = false;
   }
 
   ngAfterViewInit(): void {
+    this.ready = true;
     this.draw();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
+    if ('scale' in changes) {
+      // console.log(changes.scale);
+      if (this.ready) {
+        this.draw();
+      }
+    }
+  }
+
+  private reset() {
+    this.renderingState = 0;
+    if (this.paintTask) {
+      this.paintTask.cancel();
+      this.paintTask = null;
+    }
   }
 
   private draw() {
     this.renderingState = this.page.renderingState;
-    if (this.renderingState === 0) {
-      this.renderingState = 1; // RUNNING
-      this.rendering.emit(this.page.id);
-      const paintTask = this.type === 'canvas' ? this.paintOnCanvas() : null;
-      // TODO: support SVG
-      if (paintTask) {
-        const result = paintTask.promise.then(() => {
-          // done with painting
-          this.renderingState = 3;
-          this.rendered.emit(this.page.id);
-        }, reason => {
-        });
-        if (this.pdfService.onAfterDraw) {
-          this.pdfService.onAfterDraw.next();
-        }
-        result.finally(() => {
-          this.pdfService.renderHighestPriority.next();
-        });
-      }
+    if (this.renderingState !== 0) {
+      // Ensure that we reset all state to prevent issues.
+      this.reset();
     }
+    this.renderingState = 1; // RUNNING
+    this.rendering.emit(this.page.id);
+    this.paintTask = this.type === 'canvas' ? this.paintOnCanvas() : null;
+    // TODO: support SVG
+    const result = this.paintTask.promise.then(() => {
+      // done with painting
+      this.renderingState = 3;
+      this.rendered.emit(this.page.id);
+    }, reason => {
+    });
+    if (this.pdfService.onAfterDraw) {
+      this.pdfService.onAfterDraw.next();
+    }
+    result.finally(() => {
+      this.pdfService.renderHighestPriority.next();
+    });
   }
 
   private paintOnCanvas() {
@@ -70,22 +88,14 @@ export class PdfContentComponent implements OnInit, OnChanges, AfterViewInit {
     canvas.mozOpaque = true;
     const ctx = canvas.getContext('2d', { alpha: false, });
     canvas.setAttribute('hidden', 'hidden');
-    //  TODO: different viewports??
-    let viewport = this.page.pdfPage.getViewport({ scale: this.pdfService.CSS_UNIT});
-    console.log(viewport);
-    const viewportWidthScale = viewport.width / this.page.viewport.width;
-    // console.log(this.el.nativeElement.offsetWidth * (viewport.height / this.page.viewport.height));
-    const scale = (this.pdfService.areaWidth * viewportWidthScale) / viewport.width * this.pdfService.scale;
-    viewport = this.page.viewport.clone( {scale: scale * this.pdfService.CSS_UNIT });
-    canvas.height = this.page.minHeight * this.pdfService.scale;
-    canvas.width = this.pdfService.areaWidth * this.pdfService.scale * viewportWidthScale;
+    const viewport = this.page.pdfPage.getViewport({ scale: this.pdfService.realScale * this.pdfService.CSS_UNIT});
+    canvas.height = viewport.height;
+    canvas.width = viewport.width;
     canvas.style.height = canvas.height + 'px';
     canvas.style.width = canvas.width + 'px';
     const renderTask = this.page.pdfPage.render({
       canvasContext: ctx,
-      viewport,
-      enableWebGL: false,
-      renderInteractiveForms: false
+      viewport
     });
     const result = {
       promise: renderCapability.promise,

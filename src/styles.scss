@@ -6,6 +6,7 @@ body {
   width: 100%;
   overflow: hidden !important;
   height: 100%;
+  background: rgba(0, 0, 0, .12);
 }
 
 .dark {
@@ -24,4 +25,8 @@ body {
     margin: 8px auto 0 auto;
     box-shadow: rgba(0, 0, 0, 0.4) 0px 1px 3px 0px;
   }
+}
+
+.flex-1 {
+  flex: 1;
 }

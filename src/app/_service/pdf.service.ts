@@ -7,20 +7,26 @@ import {Subject} from 'rxjs';
 export class PdfService {
 
   public CSS_UNIT = 96.0 / 72.0;
-  public areaWidth = window.innerWidth - 16;
+  public areaWidth = window.innerWidth;
+  public mc: any;
 
   private SCALE: number;
 
-  private TRANSFORM: any;
+  private docScale: number;
+
+  private TRANSLATE: any;
 
   private pdfDocument: any;
+
+  private currentPageNum: number;
 
   public onAfterDraw = new Subject();
   public renderHighestPriority = new Subject();
 
   constructor() {
-    this.TRANSFORM = {};
+    this.TRANSLATE = {x: 0, y: 0};
     this.scale = 1;
+    this.pageNum = 1;
   }
 
   @Input()
@@ -40,10 +46,26 @@ export class PdfService {
   }
 
   @Input()
-  public set transform(transform: any) {
-    this.TRANSFORM = transform;
+  public set translate(transform: any) {
+    this.TRANSLATE = transform;
   }
-  public get transform() {
-    return this.TRANSFORM;
+  public get translate() {
+    return this.TRANSLATE;
+  }
+
+  @Input()
+  public set realScale(scale: number) {
+    this.docScale = scale;
+  }
+  public get realScale() {
+    return this.docScale;
+  }
+
+  @Input()
+  public set pageNum(pageNum: number) {
+    this.currentPageNum = pageNum;
+  }
+  public get pageNum() {
+    return this.currentPageNum;
   }
 }
