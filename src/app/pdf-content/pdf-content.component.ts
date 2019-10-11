@@ -7,7 +7,7 @@ import {
   OnChanges,
   OnInit,
   Output,
-  SimpleChanges
+  SimpleChanges, ViewChild
 } from '@angular/core';
 import {Page} from '../_model/Page';
 import {PdfService} from '../_service/pdf.service';
@@ -25,20 +25,41 @@ export class PdfContentComponent implements OnInit, OnChanges, AfterViewInit {
   @Input() scale: number;
   @Output() rendered = new EventEmitter<number>();
   @Output() rendering = new EventEmitter<number>();
+  // @ts-ignore
+  @ViewChild('canvas') canvas: ElementRef;
 
   ready: boolean;
   paintTask: any;
   renderingState: number;
+  hasRestrictedScaling: boolean;
+  rw: number;
+  rh: number;
+  w: number;
+  h: number;
+  ctx: any;
+  visible: boolean;
+  previewSource: string;
 
   constructor(private el: ElementRef, private pdfService: PdfService) { }
 
   ngOnInit() {
     this.ready = false;
+    const actualSizeViewport = this.page.pdfPage.getViewport({ scale: this.pdfService.scale * this.pdfService.CSS_UNIT});
+    this.w = actualSizeViewport.width;
+    this.h = actualSizeViewport.height;
+    this.rw = actualSizeViewport.width;
+    this.rh = actualSizeViewport.height;
+    this.visible = false;
   }
 
   ngAfterViewInit(): void {
-    this.ready = true;
-    this.draw();
+    let rAF = window.requestAnimationFrame(() => {
+      rAF = null;
+      this.ready = true;
+      this.canvas.nativeElement.mozOpaque = true;
+      this.ctx = this.canvas.nativeElement.getContext('2d', { alpha: false, });
+      this.draw();
+    });
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -51,6 +72,7 @@ export class PdfContentComponent implements OnInit, OnChanges, AfterViewInit {
   }
 
   private reset() {
+    this.visible = false;
     this.renderingState = 0;
     if (this.paintTask) {
       this.paintTask.cancel();
@@ -78,24 +100,114 @@ export class PdfContentComponent implements OnInit, OnChanges, AfterViewInit {
       this.pdfService.onAfterDraw.next();
     }
     result.finally(() => {
+      //
+      // this.previewSource = this.canvas.nativeElement.toDataURL('image/png', 1.0);
       this.pdfService.renderHighestPriority.next();
     });
   }
 
+  // Approximates float number as a fraction using Farey sequence (max order  of 8).
+  private approximateFraction(x: number) {
+    // Fast paths for int numbers or their inversions.
+    if (Math.floor(x) === x) {
+      return [x, 1];
+    }
+    const xinv = 1 / x;
+    const limit = 8;
+    if (xinv > limit) {
+      return [1, limit];
+    } else if (Math.floor(xinv) === xinv) {
+      return [1, xinv];
+    }
+    const X = x > 1 ? xinv : x;
+    // a/b and c/d are neighbours in Farey sequence.
+    let a = 0;
+    let b = 1;
+    let c = 1;
+    let d = 1;
+    // Limiting search to order 8.
+    while (true) {
+      // Generating next term in sequence (order of q).
+      const p = a + c;
+      const q = b + d;
+      if (q > limit) {
+        break;
+      }
+      if (X <= p / q) {
+        c = p; d = q;
+      } else {
+        a = p; b = q;
+      }
+    }
+    let result;
+    // Select closest of the neighbours to x.
+    if (X - a / b < c / d - X) {
+      result = X === x ? [a, b] : [b, a];
+    } else {
+      result = X === x ? [c, d] : [d, c];
+    }
+    return result;
+  }
+
+  private roundToDivide(x, div) {
+    const r = x % div;
+    return r === 0 ? x : Math.round(x - r + div);
+  }
+
+  private getOutputScale(ctx: any) {
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    const backingStoreRatio = ctx.webkitBackingStorePixelRatio ||
+      ctx.mozBackingStorePixelRatio ||
+      ctx.msBackingStorePixelRatio ||
+      ctx.oBackingStorePixelRatio ||
+      ctx.backingStorePixelRatio || 1;
+    const pixelRatio = devicePixelRatio / backingStoreRatio;
+    return {
+      sx: pixelRatio,
+      sy: pixelRatio,
+      scaled: pixelRatio !== 1,
+    };
+  }
+
   private paintOnCanvas() {
     const renderCapability = pdfjsLib.createPromiseCapability();
-    const canvas = this.el.nativeElement.querySelector('canvas');
-    canvas.mozOpaque = true;
-    const ctx = canvas.getContext('2d', { alpha: false, });
-    canvas.setAttribute('hidden', 'hidden');
-    const viewport = this.page.pdfPage.getViewport({ scale: this.pdfService.realScale * this.pdfService.CSS_UNIT});
-    canvas.height = viewport.height;
-    canvas.width = viewport.width;
-    canvas.style.height = canvas.height + 'px';
-    canvas.style.width = canvas.width + 'px';
+    const outputScale = this.getOutputScale(this.ctx);
+    this.visible = false;
+    const actualSizeViewport = this.page.pdfPage.getViewport({ scale: this.pdfService.scale * this.pdfService.CSS_UNIT});
+    const renderViewport = actualSizeViewport.clone({ scale: this.pdfService.realScale * this.pdfService.CSS_UNIT });
+    outputScale.sx *= actualSizeViewport.width / renderViewport.width;
+    outputScale.sy *= actualSizeViewport.height / renderViewport.height;
+    outputScale.scaled = true;
+    if (outputScale.sx < 1 || outputScale.sy < 1) {
+      outputScale.sx = 1;
+      outputScale.sy = 1;
+      outputScale.scaled = false;
+    }
+    // calculate max scale
+    const pixelsInViewport = renderViewport.width * renderViewport.height;
+    const maxScale = Math.sqrt(this.pdfService.MAX_CANVAS_PIXELS / pixelsInViewport);
+    if (outputScale.sx > maxScale || outputScale.sy > maxScale) {
+      outputScale.sx = maxScale;
+      outputScale.sy = maxScale;
+      outputScale.scaled = true;
+      this.hasRestrictedScaling = true;
+    } else {
+      this.hasRestrictedScaling = false;
+    }
+    //
+    const sfx = this.approximateFraction(outputScale.sx);
+    const sfy = this.approximateFraction(outputScale.sy);
+    this.h = this.roundToDivide(renderViewport.height * outputScale.sy, sfy[0]);
+    this.w = this.roundToDivide(renderViewport.width * outputScale.sx, sfx[0]);
+    this.rh = this.roundToDivide(renderViewport.height * 1, sfy[1]);
+    this.rw = this.roundToDivide(renderViewport.width * 1 , sfx[1]);
+    // Rendering area
+    const transform = !outputScale.scaled ? null :
+      [outputScale.sx, 0, 0, outputScale.sy, 0, 0];
     const renderTask = this.page.pdfPage.render({
-      canvasContext: ctx,
-      viewport
+      canvasContext: this.ctx,
+      transform,
+      viewport: renderViewport
     });
     const result = {
       promise: renderCapability.promise,
@@ -108,7 +220,7 @@ export class PdfContentComponent implements OnInit, OnChanges, AfterViewInit {
     };
 
     renderTask.onContinue = (cont) => {
-      canvas.removeAttribute('hidden');
+      this.visible = true;
       if (result.onRenderContinue) {
         result.onRenderContinue(cont);
       } else {
@@ -116,10 +228,10 @@ export class PdfContentComponent implements OnInit, OnChanges, AfterViewInit {
       }
     };
     renderTask.promise.then(() => {
-      canvas.removeAttribute('hidden');
+      this.visible = true;
       renderCapability.resolve();
     }, error => {
-      canvas.removeAttribute('hidden');
+      this.visible = true;
       renderCapability.reject(error);
     });
     return result;

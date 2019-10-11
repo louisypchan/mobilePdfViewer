@@ -7,6 +7,9 @@ import {Subject} from 'rxjs';
 export class PdfService {
 
   public CSS_UNIT = 96.0 / 72.0;
+  // Limit canvas size to 5 mega-pixels on mobile.
+  // Support: Android, iOS
+  public MAX_CANVAS_PIXELS = 5242880;
   public areaWidth = window.innerWidth;
   public mc: any;
 
