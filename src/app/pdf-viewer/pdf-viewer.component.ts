@@ -22,6 +22,7 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   // @ts-ignore
   @ViewChild('pdfViewer') pdfViewer: ElementRef;
   container: HTMLDivElement;
+  testStr: string;
 
   constructor(private el: ElementRef, public pdfService: PdfService) { }
 
@@ -40,7 +41,6 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
     });
     this.initPdfViewer();
     this.handleEvents();
-    this.watchScroll();
   }
 
   ngOnDestroy(): void {
@@ -83,7 +83,7 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
         this.pages.push({
           id: pageNum,
           minHeight,
-          minWidth: this.pdfService.areaWidth * this.pdfService.scale,
+          minWidth: this.pdfService.areaWidth,
           viewport,
           renderingState: 0
         });
@@ -230,7 +230,7 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
       if (!this.pages[pageIndex].pdfPage) {
         this.pages[pageIndex].pdfPage = pdfPage;
       }
-      this.pagesRequests[pageIndex] = false;
+      this.pagesRequests[pageIndex] = null;
     }).catch(reason => {
       console.error('Unable to get page for page view', reason);
       // Page error -- there is nothing can be done.
@@ -286,18 +286,9 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
     this.pdfService.mc.on('doubletap', this.onDoubleTap.bind(this));
   }
 
-  private watchScroll() {
-    let rAF = null;
-    this.container.addEventListener('scroll', (evt) => {
-      if (rAF) {
-        return;
-      }
-      rAF = window.requestAnimationFrame(() => {
-        rAF = null;
-        this.currentPage = this.getPageIndexFromLocation(this.container.scrollTop, 88) + 2;
-        this.update();
-      });
-    }, true);
+  watchScroll() {
+    this.currentPage = this.getPageIndexFromLocation(this.container.scrollTop, 88) + 2;
+    this.update();
   }
 
   private binarySearch(array: number[], val: number, leftIndex: number, rightIndex: number) {

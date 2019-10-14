@@ -1,5 +1,5 @@
-<img *ngIf="previewSource && renderingState !== 3" [src]="previewSource" [ngStyle]="{position: 'absolute', width: rw + 'px', height: rh + 'px', top: '0px', zIndex: 200}" />
-<div *ngIf="renderingState !== 3">
-  <div class="loadingIcon"></div>
+<!--<img *ngIf="previewSource && renderingState !== 3" [src]="previewSource" [ngStyle]="{position: 'absolute', width: rw + 'px', height: rh + 'px', top: '0px', zIndex: 200}" />-->
+<div>
+  {{rw}}
 </div>
-<canvas #canvas class="c" *ngIf="type === 'canvas'" [width]="w" [height]="h" [ngStyle]="{visibility : visible ? 'visible' : 'hidden', width: rw + 'px', height: rh + 'px'}"></canvas>
+<canvas #canvas class="c" *ngIf="type === 'canvas'" [width]="w" [height]="h" [ngStyle]="{visibility : visible ? 'visible' : 'hidden'}"></canvas>

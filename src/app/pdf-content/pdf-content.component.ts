@@ -32,10 +32,9 @@ export class PdfContentComponent implements OnInit, OnChanges, AfterViewInit {
   paintTask: any;
   renderingState: number;
   hasRestrictedScaling: boolean;
-  rw: number;
-  rh: number;
   w: number;
   h: number;
+  rw: any;
   ctx: any;
   visible: boolean;
   previewSource: string;
@@ -44,11 +43,12 @@ export class PdfContentComponent implements OnInit, OnChanges, AfterViewInit {
 
   ngOnInit() {
     this.ready = false;
-    const actualSizeViewport = this.page.pdfPage.getViewport({ scale: this.pdfService.scale * this.pdfService.CSS_UNIT});
+    const actualSizeViewport = this.page.pdfPage.getViewport({ scale: this.pdfService.scale *  this.pdfService.realScale
+        * this.pdfService.CSS_UNIT});
     this.w = actualSizeViewport.width;
     this.h = actualSizeViewport.height;
-    this.rw = actualSizeViewport.width;
-    this.rh = actualSizeViewport.height;
+    // this.rw = actualSizeViewport.width;
+    // this.rh = actualSizeViewport.height;
     this.visible = false;
   }
 
@@ -56,8 +56,6 @@ export class PdfContentComponent implements OnInit, OnChanges, AfterViewInit {
     let rAF = window.requestAnimationFrame(() => {
       rAF = null;
       this.ready = true;
-      this.canvas.nativeElement.mozOpaque = true;
-      this.ctx = this.canvas.nativeElement.getContext('2d', { alpha: false, });
       this.draw();
     });
   }
@@ -171,9 +169,12 @@ export class PdfContentComponent implements OnInit, OnChanges, AfterViewInit {
 
   private paintOnCanvas() {
     const renderCapability = pdfjsLib.createPromiseCapability();
+    this.canvas.nativeElement.mozOpaque = true;
+    this.ctx = this.canvas.nativeElement.getContext('2d', { alpha: false, });
     const outputScale = this.getOutputScale(this.ctx);
     this.visible = false;
-    const actualSizeViewport = this.page.pdfPage.getViewport({ scale: this.pdfService.scale * this.pdfService.CSS_UNIT});
+    const actualSizeViewport = this.page.pdfPage.getViewport({ scale: this.pdfService.scale *
+        this.pdfService.realScale * this.pdfService.CSS_UNIT});
     const renderViewport = actualSizeViewport.clone({ scale: this.pdfService.realScale * this.pdfService.CSS_UNIT });
     outputScale.sx *= actualSizeViewport.width / renderViewport.width;
     outputScale.sy *= actualSizeViewport.height / renderViewport.height;
@@ -199,8 +200,6 @@ export class PdfContentComponent implements OnInit, OnChanges, AfterViewInit {
     const sfy = this.approximateFraction(outputScale.sy);
     this.h = this.roundToDivide(renderViewport.height * outputScale.sy, sfy[0]);
     this.w = this.roundToDivide(renderViewport.width * outputScale.sx, sfx[0]);
-    this.rh = this.roundToDivide(renderViewport.height * 1, sfy[1]);
-    this.rw = this.roundToDivide(renderViewport.width * 1 , sfx[1]);
     // Rendering area
     const transform = !outputScale.scaled ? null :
       [outputScale.sx, 0, 0, outputScale.sy, 0, 0];
