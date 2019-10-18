@@ -28,16 +28,18 @@ export class PdfContentComponent implements OnInit, OnChanges, AfterViewInit {
   // @ts-ignore
   @ViewChild('canvas') canvas: ElementRef;
 
+  // @ts-ignore
+  @ViewChild('pe') pe: ElementRef;
+
   ready: boolean;
   paintTask: any;
   renderingState: number;
   hasRestrictedScaling: boolean;
   w: number;
   h: number;
-  rw: any;
   ctx: any;
   visible: boolean;
-  previewSource: string;
+  pageImage: HTMLImageElement;
 
   constructor(private el: ElementRef, private pdfService: PdfService) { }
 
@@ -47,14 +49,18 @@ export class PdfContentComponent implements OnInit, OnChanges, AfterViewInit {
         * this.pdfService.CSS_UNIT});
     this.w = actualSizeViewport.width;
     this.h = actualSizeViewport.height;
-    // this.rw = actualSizeViewport.width;
-    // this.rh = actualSizeViewport.height;
     this.visible = false;
   }
 
   ngAfterViewInit(): void {
     let rAF = window.requestAnimationFrame(() => {
       rAF = null;
+      this.pageImage = document.createElement('img');
+      this.pageImage.style.height = '100%';
+      this.pageImage.style.width = '100%';
+      this.pageImage.onload = () => {
+        this.visible = true;
+      };
       this.ready = true;
       this.draw();
     });
@@ -64,7 +70,7 @@ export class PdfContentComponent implements OnInit, OnChanges, AfterViewInit {
     if ('scale' in changes) {
       // console.log(changes.scale);
       if (this.ready) {
-        this.draw();
+        // this.draw();
       }
     }
   }
@@ -99,7 +105,9 @@ export class PdfContentComponent implements OnInit, OnChanges, AfterViewInit {
     }
     result.finally(() => {
       //
-      // this.previewSource = this.canvas.nativeElement.toDataURL('image/png', 1.0);
+      // this.pageImage = this.canvas.nativeElement.toDataURL('image/webp', 1.0);
+      this.pageImage.src = this.canvas.nativeElement.toDataURL('image/webp', 1.0);
+      this.pe.nativeElement.appendChild(this.pageImage);
       this.pdfService.renderHighestPriority.next();
     });
   }
@@ -175,17 +183,8 @@ export class PdfContentComponent implements OnInit, OnChanges, AfterViewInit {
     this.visible = false;
     const actualSizeViewport = this.page.pdfPage.getViewport({ scale: this.pdfService.scale *
         this.pdfService.realScale * this.pdfService.CSS_UNIT});
-    const renderViewport = actualSizeViewport.clone({ scale: this.pdfService.realScale * this.pdfService.CSS_UNIT });
-    outputScale.sx *= actualSizeViewport.width / renderViewport.width;
-    outputScale.sy *= actualSizeViewport.height / renderViewport.height;
-    outputScale.scaled = true;
-    if (outputScale.sx < 1 || outputScale.sy < 1) {
-      outputScale.sx = 1;
-      outputScale.sy = 1;
-      outputScale.scaled = false;
-    }
-    // calculate max scale
-    const pixelsInViewport = renderViewport.width * renderViewport.height;
+    // // calculate max scale
+    const pixelsInViewport = actualSizeViewport.width * actualSizeViewport.height;
     const maxScale = Math.sqrt(this.pdfService.MAX_CANVAS_PIXELS / pixelsInViewport);
     if (outputScale.sx > maxScale || outputScale.sy > maxScale) {
       outputScale.sx = maxScale;
@@ -195,18 +194,23 @@ export class PdfContentComponent implements OnInit, OnChanges, AfterViewInit {
     } else {
       this.hasRestrictedScaling = false;
     }
+    if (outputScale.sx < 1 || outputScale.sy < 1) {
+      outputScale.sx = 1;
+      outputScale.sy = 1;
+      outputScale.scaled = false;
+    }
     //
     const sfx = this.approximateFraction(outputScale.sx);
     const sfy = this.approximateFraction(outputScale.sy);
-    this.h = this.roundToDivide(renderViewport.height * outputScale.sy, sfy[0]);
-    this.w = this.roundToDivide(renderViewport.width * outputScale.sx, sfx[0]);
+    this.h = this.roundToDivide(actualSizeViewport.height * outputScale.sy, sfy[0]);
+    this.w = this.roundToDivide(actualSizeViewport.width * outputScale.sx, sfx[0]);
     // Rendering area
     const transform = !outputScale.scaled ? null :
       [outputScale.sx, 0, 0, outputScale.sy, 0, 0];
     const renderTask = this.page.pdfPage.render({
       canvasContext: this.ctx,
       transform,
-      viewport: renderViewport
+      viewport: actualSizeViewport
     });
     const result = {
       promise: renderCapability.promise,
@@ -219,7 +223,7 @@ export class PdfContentComponent implements OnInit, OnChanges, AfterViewInit {
     };
 
     renderTask.onContinue = (cont) => {
-      this.visible = true;
+      // this.visible = true;
       if (result.onRenderContinue) {
         result.onRenderContinue(cont);
       } else {
@@ -227,11 +231,11 @@ export class PdfContentComponent implements OnInit, OnChanges, AfterViewInit {
       }
     };
     renderTask.promise.then(() => {
-      this.visible = true;
       renderCapability.resolve();
+      // this.visible = true;
     }, error => {
-      this.visible = true;
       renderCapability.reject(error);
+      this.visible = true;
     });
     return result;
   }

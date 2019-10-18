@@ -28,7 +28,7 @@ export class PdfService {
 
   constructor() {
     this.TRANSLATE = {x: 0, y: 0};
-    this.scale = 2;
+    this.scale = 1;
     this.pageNum = 1;
   }
 

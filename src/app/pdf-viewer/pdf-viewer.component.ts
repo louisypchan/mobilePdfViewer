@@ -266,7 +266,7 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
       url: this.file,
       cMapPacked: true,
       // disableAutoFetch: true,
-      rangeChunkSize: 1024 * 512,
+      rangeChunkSize: 1024 * 1024,
       disableStream: true,
       cMapUrl: `assets/cmaps`,
     });
