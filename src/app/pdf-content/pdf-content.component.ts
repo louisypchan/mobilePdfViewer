@@ -12,6 +12,7 @@ import {
 import {Page} from '../_model/Page';
 import {PdfService} from '../_service/pdf.service';
 import * as pdfjsLib from 'pdfjs-dist/webpack';
+import createWorker from 'offscreen-canvas/create-worker';
 
 @Component({
   selector: 'app-pdf-content',
@@ -23,23 +24,20 @@ export class PdfContentComponent implements OnInit, OnChanges, AfterViewInit {
   @Input() type: string;
   @Input() page: Page;
   @Input() scale: number;
+  @Input() visible: boolean;
   @Output() rendered = new EventEmitter<number>();
   @Output() rendering = new EventEmitter<number>();
   // @ts-ignore
   @ViewChild('canvas') canvas: ElementRef;
 
-  // @ts-ignore
-  @ViewChild('pe') pe: ElementRef;
-
   ready: boolean;
   paintTask: any;
   renderingState: number;
-  hasRestrictedScaling: boolean;
   w: number;
   h: number;
   ctx: any;
-  visible: boolean;
-  pageImage: HTMLImageElement;
+  loaded: boolean;
+  img: string;
 
   constructor(private el: ElementRef, private pdfService: PdfService) { }
 
@@ -49,34 +47,38 @@ export class PdfContentComponent implements OnInit, OnChanges, AfterViewInit {
         * this.pdfService.CSS_UNIT});
     this.w = actualSizeViewport.width;
     this.h = actualSizeViewport.height;
-    this.visible = false;
+    this.loaded = false;
   }
 
   ngAfterViewInit(): void {
     let rAF = window.requestAnimationFrame(() => {
       rAF = null;
-      this.pageImage = document.createElement('img');
-      this.pageImage.style.height = '100%';
-      this.pageImage.style.width = '100%';
-      this.pageImage.onload = () => {
-        this.visible = true;
-      };
       this.ready = true;
+      // TODO: support in transferControlToOffscreen mode
+      // alert(this.canvas.nativeElement.transferControlToOffscreen);
       this.draw();
     });
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if ('scale' in changes) {
-      // console.log(changes.scale);
       if (this.ready) {
-        // this.draw();
+        this.draw();
+      }
+    }
+    if ('visible' in changes) {
+      if (changes.visible.currentValue === true && this.ready) {
+        this.draw();
       }
     }
   }
 
+  pageImgLoaded() {
+    this.loaded = true;
+  }
+
   private reset() {
-    this.visible = false;
+    this.loaded = false;
     this.renderingState = 0;
     if (this.paintTask) {
       this.paintTask.cancel();
@@ -85,6 +87,9 @@ export class PdfContentComponent implements OnInit, OnChanges, AfterViewInit {
   }
 
   private draw() {
+    if (!this.page.visible) {
+      return;
+    }
     this.renderingState = this.page.renderingState;
     if (this.renderingState !== 0) {
       // Ensure that we reset all state to prevent issues.
@@ -104,11 +109,8 @@ export class PdfContentComponent implements OnInit, OnChanges, AfterViewInit {
       this.pdfService.onAfterDraw.next();
     }
     result.finally(() => {
-      //
-      // this.pageImage = this.canvas.nativeElement.toDataURL('image/webp', 1.0);
-      this.pageImage.src = this.canvas.nativeElement.toDataURL('image/webp', 1.0);
-      this.pe.nativeElement.appendChild(this.pageImage);
-      this.pdfService.renderHighestPriority.next();
+      // use webp to reduce the image size
+      this.img = this.canvas.nativeElement.toDataURL('image/webp', 1.0);
     });
   }
 
@@ -180,7 +182,7 @@ export class PdfContentComponent implements OnInit, OnChanges, AfterViewInit {
     this.canvas.nativeElement.mozOpaque = true;
     this.ctx = this.canvas.nativeElement.getContext('2d', { alpha: false, });
     const outputScale = this.getOutputScale(this.ctx);
-    this.visible = false;
+    this.loaded = false;
     const actualSizeViewport = this.page.pdfPage.getViewport({ scale: this.pdfService.scale *
         this.pdfService.realScale * this.pdfService.CSS_UNIT});
     // // calculate max scale
@@ -190,9 +192,6 @@ export class PdfContentComponent implements OnInit, OnChanges, AfterViewInit {
       outputScale.sx = maxScale;
       outputScale.sy = maxScale;
       outputScale.scaled = true;
-      this.hasRestrictedScaling = true;
-    } else {
-      this.hasRestrictedScaling = false;
     }
     if (outputScale.sx < 1 || outputScale.sy < 1) {
       outputScale.sx = 1;
@@ -210,6 +209,7 @@ export class PdfContentComponent implements OnInit, OnChanges, AfterViewInit {
     const renderTask = this.page.pdfPage.render({
       canvasContext: this.ctx,
       transform,
+      enableWebGL: true,
       viewport: actualSizeViewport
     });
     const result = {
@@ -223,7 +223,6 @@ export class PdfContentComponent implements OnInit, OnChanges, AfterViewInit {
     };
 
     renderTask.onContinue = (cont) => {
-      // this.visible = true;
       if (result.onRenderContinue) {
         result.onRenderContinue(cont);
       } else {
@@ -232,10 +231,9 @@ export class PdfContentComponent implements OnInit, OnChanges, AfterViewInit {
     };
     renderTask.promise.then(() => {
       renderCapability.resolve();
-      // this.visible = true;
     }, error => {
       renderCapability.reject(error);
-      this.visible = true;
+      this.loaded = true;
     });
     return result;
   }

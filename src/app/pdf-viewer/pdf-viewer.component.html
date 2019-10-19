@@ -1,5 +1,5 @@
 <div class="info">
-  {{testStr}}
+  {{currentPage}} / {{pagesCount}}
 </div>
 <div class="viewer" (scroll)="watchScroll()">
   <div #pdfViewer class="pdfViewer" [ngStyle]="{transformOrigin: '0% 0%', transform: 'scale(' + pdfService.scale + ',' + pdfService.scale + ') translate('

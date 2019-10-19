@@ -84,6 +84,8 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
           id: pageNum,
           minHeight,
           minWidth: this.pdfService.areaWidth,
+          visible: false,
+          scale: this.pdfService.scale,
           viewport,
           renderingState: 0
         });
@@ -177,6 +179,9 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
       // @ts-ignore
       const percent = ((this.pages[i].minHeight * this.pdfService.scale - hiddenHeight) * 100)
         / (this.pages[i].minHeight * this.pdfService.scale) | 0;
+      if (!this.pages[i].visible) {
+        this.pages[i].visible = true;
+      }
       visible.push({
         index: i,
         percent
@@ -282,12 +287,52 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private handleEvents() {
     this.pdfService.mc = new Hammer.Manager(this.container, { touchAction: 'pan-x pan-y' });
+    // this.pdfService.mc.add(new Hammer.Pan({ threshold: 0, pointers: 1}));
     this.pdfService.mc.add(new Hammer.Tap({ event: 'doubletap', taps: 2 }));
     this.pdfService.mc.on('doubletap', this.onDoubleTap.bind(this));
+    // this.pdfService.mc.on('panright', this.onPan.bind(this));
+    this.container.addEventListener('touchstart', this.handleDragStart.bind(this), false);
+    this.container.addEventListener('touchmove', this.handleDrag.bind(this), false);
+    this.container.addEventListener('touchend', this.handleDragEnd.bind(this), false);
+  }
+
+  handleDragStart(e) {
+    this.pdfService.lastTouchPosition = {
+      x: e.touches[0].pageX,
+      y: e.touches[0].pageY
+    };
+  }
+  handleDrag(e) {
+    e = e.touches[0];
+    const deltaX = e.pageX - this.pdfService.lastTouchPosition.x;
+    const deltaY = e.pageY - this.pdfService.lastTouchPosition.y;
+    if (this.pdfService.scale > 1) {
+      if (deltaX > 0) {
+        this.pdfService.translate.x = this.pdfService.translate.x + deltaX > 0 ? 0 : this.pdfService.translate.x + deltaX;
+      }
+      if (deltaY > 0) {
+        this.pdfService.translate.y = this.pdfService.translate.y + deltaY > 0 ? 0 : this.pdfService.translate.y + deltaY;
+      }
+    }
+    this.pdfService.lastTouchPosition = {
+      x: e.pageX,
+      y: e.pageY
+    };
+  }
+
+  handleDragEnd(e) {
+    console.log(e);
+  }
+
+  onPan(e) {
+
   }
 
   watchScroll() {
-    this.currentPage = this.getPageIndexFromLocation(this.container.scrollTop, 88) + 2;
+    const index = this.getPageIndexFromLocation(this.container.scrollTop +
+      (Math.abs(this.pdfService.translate.y) * this.pdfService.scale), 88);
+    this.currentPage = index + 2;
+    this.pages[this.currentPage - 1].scale = this.pdfService.scale;
     this.update();
   }
 
@@ -326,6 +371,7 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
     } else {
       this.pdfService.scale++;
     }
+    this.pages[pageIndex].scale = this.pdfService.scale;
     const scaleViewportWidth = ((this.pdfService.scale - 1) * this.pages[pageIndex].minWidth) / this.pdfService.scale;
     const scaleViewportHeight = ((this.pdfService.scale - 1) * this.pages[pageIndex].minHeight) / this.pdfService.scale;
     const newX = x * scaleViewportWidth / this.pages[pageIndex].minWidth;

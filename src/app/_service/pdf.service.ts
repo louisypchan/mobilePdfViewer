@@ -12,6 +12,7 @@ export class PdfService {
   public MAX_CANVAS_PIXELS = 5242880;
   public areaWidth = window.innerWidth;
   public mc: any;
+  public lastTouchPosition: any;
 
   private SCALE: number;
 

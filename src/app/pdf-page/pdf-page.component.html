@@ -1,3 +1,3 @@
-<div class="page" *ngFor="let page of pages" [ngStyle]="{minHeight: page.minHeight + 'px', minWidth: page.minWidth + 'px'}">
-  <app-pdf-content class="content" [type]="type" [page]="page" [scale]="pdfService.scale" *ngIf="page.pdfPage" (rendered)="onRendered($event)" (rendering)="onRendering($event)"></app-pdf-content>
+<div class="page" *ngFor="let page of pages; index as i;" [ngStyle]="{minHeight: page.minHeight + 'px', minWidth: page.minWidth + 'px'}">
+  <app-pdf-content class="content" [type]="type" [page]="page" [visible]="page.visible" [scale]="page.scale" *ngIf="page.pdfPage" (rendered)="onRendered($event)" (rendering)="onRendering($event)"></app-pdf-content>
 </div>
