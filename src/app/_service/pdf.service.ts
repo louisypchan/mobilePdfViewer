@@ -13,23 +13,19 @@ export class PdfService {
   public areaWidth = window.innerWidth;
   public mc: any;
   public lastTouchPosition: any;
+  public previewScale: number;
+  public pos: any;
 
   private SCALE: number;
 
   private docScale: number;
-
-  private TRANSLATE: any;
-
   private pdfDocument: any;
-
   private currentPageNum: number;
-
   public onAfterDraw = new Subject();
   public renderHighestPriority = new Subject();
 
   constructor() {
-    this.TRANSLATE = {x: 0, y: 0};
-    this.scale = 1;
+    this.scale = 2;
     this.pageNum = 1;
   }
 
@@ -47,14 +43,6 @@ export class PdfService {
   }
   public get scale() {
     return this.SCALE;
-  }
-
-  @Input()
-  public set translate(transform: any) {
-    this.TRANSLATE = transform;
-  }
-  public get translate() {
-    return this.TRANSLATE;
   }
 
   @Input()

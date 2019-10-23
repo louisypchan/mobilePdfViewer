@@ -12,7 +12,6 @@ import {
 import {Page} from '../_model/Page';
 import {PdfService} from '../_service/pdf.service';
 import * as pdfjsLib from 'pdfjs-dist/webpack';
-import createWorker from 'offscreen-canvas/create-worker';
 
 @Component({
   selector: 'app-pdf-content',

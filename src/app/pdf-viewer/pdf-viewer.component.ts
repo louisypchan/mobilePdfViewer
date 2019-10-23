@@ -1,8 +1,11 @@
-import {AfterViewInit, Component, ElementRef, Input, OnDestroy, OnInit, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, Input, NgZone, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import * as pdfjsLib from 'pdfjs-dist/webpack';
 import {Page} from '../_model/Page';
 import {PdfService} from '../_service/pdf.service';
 import Hammer from 'hammerjs';
+import BScroll from '@better-scroll/core';
+import ScrollBar from '@better-scroll/scroll-bar';
+import Zoom from '../plugins/zoom';
 
 @Component({
   selector: 'app-pdf-viewer',
@@ -23,10 +26,13 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('pdfViewer') pdfViewer: ElementRef;
   container: HTMLDivElement;
   testStr: string;
+  bs: any;
 
-  constructor(private el: ElementRef, public pdfService: PdfService) { }
+  constructor(private el: ElementRef, public pdfService: PdfService, private zone: NgZone) { }
 
   ngOnInit() {
+    BScroll.use(ScrollBar);
+    BScroll.use(Zoom);
     if (!this.renderType) {
       this.renderType = 'canvas';
     }
@@ -40,7 +46,7 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     });
     this.initPdfViewer();
-    this.handleEvents();
+    // this.handleEvents();
   }
 
   ngOnDestroy(): void {
@@ -53,10 +59,6 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
     this.pagesCount = 1;
     this.scale = 0;
     this.pagesRequests = [];
-    this.pdfService.translate = {
-      x: 0,
-      y: 0
-    };
   }
 
   private initPages() {
@@ -67,6 +69,7 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
     this.pagesCount = this.pdfService.pdf.numPages;
     const pagesCapability = pdfjsLib.createPromiseCapability();
     pagesCapability.promise.then(() => {
+      // this.bs.zoomTo(this.pdfService.scale, 0, 0);
       // pagesloaded
       // console.log(this.pages);
     });
@@ -133,7 +136,24 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
           });
         }
       });
-      this.update();
+      requestAnimationFrame(() => {
+        this.bs = new BScroll(this.container, {
+          probeType: 3,
+          scrollX: true,
+          scrollY: true,
+          scrollbar: {
+            fade: false
+          },
+          autoBlur: false,
+          zoom: {
+            start: this.pdfService.scale,
+            min: 1,
+            max: 3
+          }
+        });
+        this.bs.on('scroll', this.watchScroll, this);
+        this.update({x: 0, y: 0});
+      });
     });
   }
 
@@ -154,12 +174,14 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
     return minIndex;
   }
 
-  private getVisiblePages() {
-    const top = this.container.scrollTop;
+  private getVisiblePages(cords) {
+    const top = Math.abs(cords ? cords.y : this.bs.y);
     const bottom = top + this.container.clientHeight;
     const [visible, numViews] = [[], this.pagesCount];
     const firstVisibleElementInd = numViews === 0 ? 0 : this.binarySearchFirstItem(this.pages, (index) =>
-      (this.pages[index].minHeight * (index + 1) + 5 * index) * this.pdfService.scale > top);
+      (this.pages[index].minHeight * (index + 1) + 5 * index) * this.pdfService.scale > top + 88);
+    this.currentPage = firstVisibleElementInd + 1;
+    this.pages[this.currentPage - 1].scale = this.pdfService.scale;
     let lastEdge = -1;
     for (let i = firstVisibleElementInd; i < numViews; i++) {
       const currentHeight = (5 * i + this.pages[i].minHeight * i) * this.pdfService.scale;
@@ -195,12 +217,11 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
       }
       return a.index - b.index; // ensure stability
     });
-    // console.log(visible);
     return { first, last, pages: visible, };
   }
 
-  private update() {
-    const visible = this.getVisiblePages();
+  private update(cords) {
+    const visible = this.getVisiblePages(cords);
     if (visible.pages.length === 0) {
       // no visible page
       return;
@@ -209,7 +230,7 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private renderHighestPriority(currentlyVisiblePages) {
-    const visible = currentlyVisiblePages || this.getVisiblePages();
+    const visible = currentlyVisiblePages || this.getVisiblePages(null);
     const index = this.getHighestPriorityIndex(visible);
     if (index > -1) {
       //
@@ -290,50 +311,10 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
     // this.pdfService.mc.add(new Hammer.Pan({ threshold: 0, pointers: 1}));
     this.pdfService.mc.add(new Hammer.Tap({ event: 'doubletap', taps: 2 }));
     this.pdfService.mc.on('doubletap', this.onDoubleTap.bind(this));
-    // this.pdfService.mc.on('panright', this.onPan.bind(this));
-    this.container.addEventListener('touchstart', this.handleDragStart.bind(this), false);
-    this.container.addEventListener('touchmove', this.handleDrag.bind(this), false);
-    this.container.addEventListener('touchend', this.handleDragEnd.bind(this), false);
   }
 
-  handleDragStart(e) {
-    this.pdfService.lastTouchPosition = {
-      x: e.touches[0].pageX,
-      y: e.touches[0].pageY
-    };
-  }
-  handleDrag(e) {
-    e = e.touches[0];
-    const deltaX = e.pageX - this.pdfService.lastTouchPosition.x;
-    const deltaY = e.pageY - this.pdfService.lastTouchPosition.y;
-    if (this.pdfService.scale > 1) {
-      if (deltaX > 0) {
-        this.pdfService.translate.x = this.pdfService.translate.x + deltaX > 0 ? 0 : this.pdfService.translate.x + deltaX;
-      }
-      if (deltaY > 0) {
-        this.pdfService.translate.y = this.pdfService.translate.y + deltaY > 0 ? 0 : this.pdfService.translate.y + deltaY;
-      }
-    }
-    this.pdfService.lastTouchPosition = {
-      x: e.pageX,
-      y: e.pageY
-    };
-  }
-
-  handleDragEnd(e) {
-    console.log(e);
-  }
-
-  onPan(e) {
-
-  }
-
-  watchScroll() {
-    const index = this.getPageIndexFromLocation(this.container.scrollTop +
-      (Math.abs(this.pdfService.translate.y) * this.pdfService.scale), 88);
-    this.currentPage = index + 2;
-    this.pages[this.currentPage - 1].scale = this.pdfService.scale;
-    this.update();
+  watchScroll(cords) {
+    this.update(cords);
   }
 
   private binarySearch(array: number[], val: number, leftIndex: number, rightIndex: number) {
@@ -362,24 +343,25 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private onDoubleTap(e) {
     // console.log(e);
-    const scrollTop = this.container.scrollTop;
-    const scrollLeft = this.container.scrollLeft;
-    const [x, y] = [scrollLeft + e.center.x, scrollTop + e.center.y];
-    const pageIndex = this.getPageIndexFromLocation(y) + 1;
-    if (this.pdfService.scale > 1) {
-      this.pdfService.scale--;
-    } else {
-      this.pdfService.scale++;
-    }
-    this.pages[pageIndex].scale = this.pdfService.scale;
-    const scaleViewportWidth = ((this.pdfService.scale - 1) * this.pages[pageIndex].minWidth) / this.pdfService.scale;
-    const scaleViewportHeight = ((this.pdfService.scale - 1) * this.pages[pageIndex].minHeight) / this.pdfService.scale;
-    const newX = x * scaleViewportWidth / this.pages[pageIndex].minWidth;
-    const newY = y * scaleViewportHeight / this.pages[pageIndex].minHeight;
-    this.pdfService.translate = {
-      x: 0 - newX,
-      y: 0 - newY
-    };
+    // const scrollTop = this.container.scrollTop;
+    // const scrollLeft = this.container.scrollLeft;
+    // const [x, y] = [scrollLeft + e.center.x, scrollTop + e.center.y];
+    // const pageIndex = this.getPageIndexFromLocation(y + Math.abs(this.pdfService.translate.y * this.pdfService.scale)) + 1;
+    // if (this.pdfService.scale > 1) {
+    //   this.pdfService.scale--;
+    // } else {
+    //   this.pdfService.scale++;
+    // }
+    // this.pages[pageIndex].scale = this.pdfService.scale;
+    // const scaleViewportWidth = ((this.pdfService.scale - 1) * this.pages[pageIndex].minWidth) / this.pdfService.scale;
+    // const scaleViewportHeight = ((this.pdfService.scale - 1) * this.pages[pageIndex].minHeight) / this.pdfService.scale;
+    // const newX = x * scaleViewportWidth / this.pages[pageIndex].minWidth;
+    // const newY = y * scaleViewportHeight / this.pages[pageIndex].minHeight;
+    // this.pdfService.translate = {
+    //   x: 0 - newX + this.pdfService.translate.x,
+    //   y: 0 - newY + this.pdfService.translate.y
+    // };
+    // this.container.scrollTop = scrollTop + newY * this.pdfService.scale;
   }
 
   onRendering(id: number) {

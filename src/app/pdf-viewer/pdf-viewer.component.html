@@ -1,9 +1,8 @@
 <div class="info">
   {{currentPage}} / {{pagesCount}}
 </div>
-<div class="viewer" (scroll)="watchScroll()">
-  <div #pdfViewer class="pdfViewer" [ngStyle]="{transformOrigin: '0% 0%', transform: 'scale(' + pdfService.scale + ',' + pdfService.scale + ') translate('
-  + pdfService.translate.x + 'px,' + pdfService.translate.y + 'px)'}">
+<div class="viewer">
+  <div #pdfViewer class="pdfViewer">
     <app-pdf-page [pages]="pages" [type]="renderType" (rendered)="onRendered($event)" (rendering)="onRendering($event)"></app-pdf-page>
   </div>
 </div>

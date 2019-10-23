@@ -125,6 +125,41 @@
           }
         }
       }
+    },
+    "bs-zoom": {
+      "projectType": "library",
+      "root": "projects/bs-zoom",
+      "sourceRoot": "projects/bs-zoom/src",
+      "prefix": "lib",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-ng-packagr:build",
+          "options": {
+            "tsConfig": "projects/bs-zoom/tsconfig.lib.json",
+            "project": "projects/bs-zoom/ng-package.json"
+          }
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "main": "projects/bs-zoom/src/test.ts",
+            "tsConfig": "projects/bs-zoom/tsconfig.spec.json",
+            "karmaConfig": "projects/bs-zoom/karma.conf.js"
+          }
+        },
+        "lint": {
+          "builder": "@angular-devkit/build-angular:tslint",
+          "options": {
+            "tsConfig": [
+              "projects/bs-zoom/tsconfig.lib.json",
+              "projects/bs-zoom/tsconfig.spec.json"
+            ],
+            "exclude": [
+              "**/node_modules/**"
+            ]
+          }
+        }
+      }
     }},
   "defaultProject": "mobilePdfViewer"
 }
