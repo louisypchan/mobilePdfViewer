@@ -25,7 +25,7 @@ export class PdfService {
   public renderHighestPriority = new Subject();
 
   constructor() {
-    this.scale = 2;
+    this.scale = 1;
     this.pageNum = 1;
   }
 

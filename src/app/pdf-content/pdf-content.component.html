@@ -2,6 +2,6 @@
   <div class="d-flex flex-column align-items-center position-absolute justify-content-center" style="top: 0; left:0; right: 0; bottom: 0;" *ngIf="(!loaded || renderingState !== 3) && !img">
     <img src="../../assets/images/ajax-spinner-gif.svg" />
   </div>
-  <img *ngIf="img" [src]="img"  (load)="pageImgLoaded()" (error)="pageImgLoaded()" class="w-100 h-100" />
+  <img *ngIf="img" [src]="img"  (load)="pageImgLoaded()" (error)="pageImgLoaded()" class="w-100 h-100"  />
 </div>
 <canvas #canvas class="c" *ngIf="type === 'canvas'" [width]="w" [height]="h" style="display: none;"></canvas>

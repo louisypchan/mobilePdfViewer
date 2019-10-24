@@ -1,4 +1,5 @@
 .actions {
+  background: #fff;
   z-index: 100;
   display: flex;
   align-items: center;
@@ -8,6 +9,41 @@
   0 0 4px 0 rgba(95, 99, 104, 0.4), 0 0 6px 2px rgba(95, 99, 104, 0.4);
   padding: 0 1rem;
   white-space: normal;
-  height: 40px;
+  height: 4rem;
   word-break: break-all;
+
+  .toolbar-icon {
+    position: relative;
+    width: 3rem;
+    height: 3.3rem;
+
+    display: flex;
+    flex-direction: column;
+    -webkit-box-pack: justify;
+    justify-content: space-between;
+    -webkit-box-align: center;
+    align-items: center;
+    margin: 0px 4px;
+
+    &:hover {
+      i {
+        color: #2e323a;
+      }
+      span {
+        color: #2e323a;
+      }
+    }
+
+    i {
+      font-size: 1.8rem;
+      color: #5B6B73;
+    }
+
+    span {
+      font-weight: 600;
+      color: #5B6B73;
+      margin-top: 0.3rem;
+      font-size: 1rem;
+    }
+  }
 }

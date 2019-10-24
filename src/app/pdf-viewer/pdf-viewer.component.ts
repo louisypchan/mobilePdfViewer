@@ -25,7 +25,6 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   // @ts-ignore
   @ViewChild('pdfViewer') pdfViewer: ElementRef;
   container: HTMLDivElement;
-  testStr: string;
   bs: any;
 
   constructor(private el: ElementRef, public pdfService: PdfService, private zone: NgZone) { }
@@ -46,10 +45,13 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     });
     this.initPdfViewer();
-    // this.handleEvents();
+    this.handleEvents();
   }
 
   ngOnDestroy(): void {
+    if (this.bs) {
+      this.bs.destory();
+    }
     this.pdfService.renderHighestPriority.unsubscribe();
   }
 
@@ -141,10 +143,10 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
           probeType: 3,
           scrollX: true,
           scrollY: true,
-          scrollbar: {
-            fade: false
-          },
-          autoBlur: false,
+          scrollbar: true,
+          HWCompositing: false,
+          bounceTime: 400,
+          autoBlur: true,
           zoom: {
             start: this.pdfService.scale,
             min: 1,
@@ -152,6 +154,7 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
           }
         });
         this.bs.on('scroll', this.watchScroll, this);
+        this.bs.on('afterZoom', this.zoomEnd, this);
         this.update({x: 0, y: 0});
       });
     });
@@ -178,8 +181,10 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
     const top = Math.abs(cords ? cords.y : this.bs.y);
     const bottom = top + this.container.clientHeight;
     const [visible, numViews] = [[], this.pagesCount];
-    const firstVisibleElementInd = numViews === 0 ? 0 : this.binarySearchFirstItem(this.pages, (index) =>
-      (this.pages[index].minHeight * (index + 1) + 5 * index) * this.pdfService.scale > top + 88);
+    const firstVisibleElementInd = numViews === 0 ? 0 : this.binarySearchFirstItem(this.pages, (index) => {
+      const offset = (this.container.offsetHeight - this.pages[index].minHeight + 5) * this.pdfService.scale;
+      return (this.pages[index].minHeight * (index + 1) + 5 * index) * this.pdfService.scale > top + offset;
+    });
     this.currentPage = firstVisibleElementInd + 1;
     this.pages[this.currentPage - 1].scale = this.pdfService.scale;
     let lastEdge = -1;
@@ -204,6 +209,7 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
       if (!this.pages[i].visible) {
         this.pages[i].visible = true;
       }
+      this.pages[i].scale = this.pdfService.scale;
       visible.push({
         index: i,
         percent
@@ -307,7 +313,7 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private handleEvents() {
-    this.pdfService.mc = new Hammer.Manager(this.container, { touchAction: 'pan-x pan-y' });
+    this.pdfService.mc = new Hammer.Manager(this.container);
     // this.pdfService.mc.add(new Hammer.Pan({ threshold: 0, pointers: 1}));
     this.pdfService.mc.add(new Hammer.Tap({ event: 'doubletap', taps: 2 }));
     this.pdfService.mc.on('doubletap', this.onDoubleTap.bind(this));
@@ -315,6 +321,14 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
 
   watchScroll(cords) {
     this.update(cords);
+  }
+
+  zoomEnd(e) {
+    requestAnimationFrame(() => {
+      const pageIndex = this.getPageIndexFromLocation(e.y) + 1;
+      this.pdfService.scale = e.scale;
+      this.pages[pageIndex].scale = this.pdfService.scale;
+    });
   }
 
   private binarySearch(array: number[], val: number, leftIndex: number, rightIndex: number) {
@@ -342,26 +356,13 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private onDoubleTap(e) {
-    // console.log(e);
-    // const scrollTop = this.container.scrollTop;
-    // const scrollLeft = this.container.scrollLeft;
-    // const [x, y] = [scrollLeft + e.center.x, scrollTop + e.center.y];
-    // const pageIndex = this.getPageIndexFromLocation(y + Math.abs(this.pdfService.translate.y * this.pdfService.scale)) + 1;
-    // if (this.pdfService.scale > 1) {
-    //   this.pdfService.scale--;
-    // } else {
-    //   this.pdfService.scale++;
-    // }
+    if (this.pdfService.scale > 1) {
+      this.pdfService.scale--;
+    } else {
+      this.pdfService.scale++;
+    }
     // this.pages[pageIndex].scale = this.pdfService.scale;
-    // const scaleViewportWidth = ((this.pdfService.scale - 1) * this.pages[pageIndex].minWidth) / this.pdfService.scale;
-    // const scaleViewportHeight = ((this.pdfService.scale - 1) * this.pages[pageIndex].minHeight) / this.pdfService.scale;
-    // const newX = x * scaleViewportWidth / this.pages[pageIndex].minWidth;
-    // const newY = y * scaleViewportHeight / this.pages[pageIndex].minHeight;
-    // this.pdfService.translate = {
-    //   x: 0 - newX + this.pdfService.translate.x,
-    //   y: 0 - newY + this.pdfService.translate.y
-    // };
-    // this.container.scrollTop = scrollTop + newY * this.pdfService.scale;
+    this.bs.zoomTo(this.pdfService.scale, e.center.x, e.center.y);
   }
 
   onRendering(id: number) {
