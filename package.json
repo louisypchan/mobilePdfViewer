@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve --host 10.15.135.162",
+    "start": "ng serve --host 192.168.50.226",
     "build": "ng build",
     "test": "ng test",
     "lint": "ng lint",
@@ -21,7 +21,6 @@
     "@angular/router": "~9.0.0-next.9",
     "@better-scroll/core": "^2.0.0-beta.2",
     "@better-scroll/scroll-bar": "^2.0.0-beta.2",
-    "@better-scroll/zoom": "^2.0.0-beta.2",
     "bootstrap-scss": "^4.3.1",
     "hammerjs": "^2.0.8",
     "pdfjs-dist": "^2.1.266",

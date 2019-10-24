@@ -3,13 +3,27 @@
     <app-pdf-viewer class="h-100" [renderVisibleOnly]="true" [file]="'assets/compressed.tracemonkey-pldi-09.pdf'"></app-pdf-viewer>
   </div>
   <div class="actions">
-    <a href="javascript:void(0);" class="toolbar-icon">
-      <i class="far fa-signature"></i>
-      <span>签名</span>
-    </a>
-    <a href="javascript:void(0);" class="toolbar-icon">
-      <i class="far fa-signature"></i>
-      <span>签名</span>
-    </a>
+    <div class="left">
+      <a href="javascript:void(0);" class="toolbar-icon">
+        <i class="fal fa-arrow-to-top"></i>
+        <span class="small">前往顶部</span>
+      </a>
+    </div>
+    <div class="center">
+      <a href="javascript:void(0);" class="toolbar-icon" *ngIf="signatureType === 2">
+        <i class="far fa-stamp"></i>
+        <span>签章</span>
+      </a>
+      <a href="javascript:void(0);" class="toolbar-icon" *ngIf="signatureType === 1">
+        <i class="far fa-signature"></i>
+        <span>签名</span>
+      </a>
+    </div>
+    <div class="right">
+      <a href="javascript:void(0);" class="toolbar-icon">
+        <i class="fal fa-arrow-to-bottom"></i>
+        <span class="small">前往底部</span>
+      </a>
+    </div>
   </div>
 </div>

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import {ActivatedRoute} from '@angular/router';
 
 @Component({
   selector: 'app-sv',
@@ -7,12 +8,18 @@ import { Component, OnInit } from '@angular/core';
 })
 export class SvComponent implements OnInit {
 
-  str: string;
+  signatureType: number;
+  isTop: boolean;
+  isBottom: boolean;
 
-  constructor() { }
+  constructor(private route: ActivatedRoute) {
+    //
+  }
 
   ngOnInit() {
-    this.str = 'Louis';
+    this.signatureType = +(this.route.snapshot.queryParams.st || 1 );
+    this.isTop = true;
+    this.isBottom = false;
   }
 
 }
