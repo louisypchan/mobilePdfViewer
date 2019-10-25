@@ -1,4 +1,15 @@
-import {AfterViewInit, Component, ElementRef, Input, NgZone, OnDestroy, OnInit, ViewChild} from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  NgZone,
+  OnDestroy,
+  OnInit,
+  Output,
+  ViewChild
+} from '@angular/core';
 import * as pdfjsLib from 'pdfjs-dist/webpack';
 import {Page} from '../_model/Page';
 import {PdfService} from '../_service/pdf.service';
@@ -6,6 +17,7 @@ import Hammer from 'hammerjs';
 import BScroll from '@better-scroll/core';
 import ScrollBar from '@better-scroll/scroll-bar';
 import Zoom from '../plugins/zoom';
+import {ActivatedRoute} from '@angular/router';
 
 @Component({
   selector: 'app-pdf-viewer',
@@ -26,8 +38,11 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('pdfViewer') pdfViewer: ElementRef;
   container: HTMLDivElement;
   bs: any;
+  @Output() docReady = new EventEmitter();
+  @Output() onscroll = new EventEmitter<any>();
+  @Output() bsReady = new EventEmitter<any>();
 
-  constructor(private el: ElementRef, public pdfService: PdfService, private zone: NgZone) { }
+  constructor(private el: ElementRef, public pdfService: PdfService, private zone: NgZone, private route: ActivatedRoute) { }
 
   ngOnInit() {
     BScroll.use(ScrollBar);
@@ -49,6 +64,8 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.pdfService.scrollToBotoom.unsubscribe();
+    this.pdfService.scrollToTop.unsubscribe();
     if (this.bs) {
       this.bs.destory();
     }
@@ -145,6 +162,7 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
           scrollY: true,
           scrollbar: true,
           HWCompositing: false,
+          bindToWrapper: true,
           bounceTime: 400,
           autoBlur: true,
           zoom: {
@@ -155,6 +173,19 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
         });
         this.bs.on('scroll', this.watchScroll, this);
         this.bs.on('afterZoom', this.zoomEnd, this);
+        this.pdfService.scrollToTop.subscribe({
+          next: () => {
+            //
+            this.bs.scrollTo(this.bs.x, 0, 800);
+          }
+        });
+        this.pdfService.scrollToBotoom.subscribe({
+          next: () => {
+            //
+            this.bs.scrollTo(this.bs.x, this.bs.scroller.scrollBehaviorY.maxScrollPos, 800);
+          }
+        });
+        this.bsReady.emit();
         this.update({x: 0, y: 0});
       });
     });
@@ -308,6 +339,7 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
     };
     loadingTask.promise.then((pdfDocument) => {
       this.pdfService.pdf = pdfDocument;
+      this.docReady.emit();
       this.initPages();
     });
   }
@@ -321,6 +353,11 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
 
   watchScroll(cords) {
     this.update(cords);
+    this.onscroll.emit({
+      x: cords.x,
+      y: cords.y,
+      scroller: this.bs.scroller
+    });
   }
 
   zoomEnd(e) {

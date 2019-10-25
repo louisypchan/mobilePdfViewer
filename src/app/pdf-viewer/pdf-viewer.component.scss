@@ -9,12 +9,14 @@
 }
 
 .info {
-  position: fixed;
-  top: 8px; right: 8px;
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
   border-radius:5px;
   padding: 0 8px;
   z-index: 9999;
   font-size: .9rem;
-  background: rgba(0, 0, 0, .15);
+  color: #fff;
+  background: rgba(0, 0, 0, .5);
 }
 

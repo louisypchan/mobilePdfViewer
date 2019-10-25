@@ -1,29 +1,39 @@
 <div class="d-flex flex-column h-100">
-  <div class="d-flex flex-column flex-1" style="overflow: hidden;">
-    <app-pdf-viewer class="h-100" [renderVisibleOnly]="true" [file]="'assets/compressed.tracemonkey-pldi-09.pdf'"></app-pdf-viewer>
+  <div class="infoWrapper">
+    <div class="title">
+      {{pdfService.name}}
+    </div>
+    <div style="border-left: 1px solid #ccc; height: 100%; margin: -5px 0;"></div>
+  </div>
+  <div class="d-flex flex-column flex-1 position-relative" style="overflow: hidden;">
+    <app-pdf-viewer class="h-100" (onscroll)="onScroll($event)" (bsReady)="onBsReady()" [renderVisibleOnly]="true" [file]="url" (docReady)="setTitleUsingMetadata()"></app-pdf-viewer>
   </div>
   <div class="actions">
     <div class="left">
-      <a href="javascript:void(0);" class="toolbar-icon">
+      <a href="javascript:void(0);" class="toolbar-icon" [class.disabled]="isTop" (click)="scroll2Top()">
         <i class="fal fa-arrow-to-top"></i>
         <span class="small">前往顶部</span>
       </a>
     </div>
     <div class="center">
-      <a href="javascript:void(0);" class="toolbar-icon" *ngIf="signatureType === 2">
+      <a href="javascript:void(0);" class="toolbar-icon" *ngIf="signatureType === 2"  [class.disabled]="!ready">
         <i class="far fa-stamp"></i>
         <span>签章</span>
       </a>
-      <a href="javascript:void(0);" class="toolbar-icon" *ngIf="signatureType === 1">
+      <a href="javascript:void(0);" class="toolbar-icon" [class.disabled]="!ready" *ngIf="signatureType === 1" [satPopoverAnchor]="signatures" (click)="openSignatureList()">
         <i class="far fa-signature"></i>
         <span>签名</span>
       </a>
     </div>
     <div class="right">
-      <a href="javascript:void(0);" class="toolbar-icon">
+      <a href="javascript:void(0);" class="toolbar-icon" [class.disabled]="isBottom" (click)="scroll2Bottom()">
         <i class="fal fa-arrow-to-bottom"></i>
         <span class="small">前往底部</span>
       </a>
     </div>
   </div>
 </div>
+
+<sat-popover #signatures horizontalAlign="center" verticalAlign="end" lockAlignment>
+  <app-signature *ngIf="ready" (close)="onSignaturesClose()" [scale]="pdfService.realScale"></app-signature>
+</sat-popover>
