@@ -2,7 +2,7 @@
   {{currentPage}}/{{pagesCount}}
 </div>
 <div class="viewer">
-  <div #pdfViewer class="pdfViewer">
+  <div id="pdfViewer" cdkDropList #pdfViewer class="pdfViewer" (cdkDropListDropped)="drop($event)">
     <app-pdf-page [pages]="pages" [type]="renderType" (rendered)="onRendered($event)" (rendering)="onRendering($event)"></app-pdf-page>
   </div>
 </div>

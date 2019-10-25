@@ -14,6 +14,7 @@ import {PdfService} from '../_service/pdf.service';
 import {Utils} from '../_util';
 import {Stamp} from '../_model/Stamp';
 import {StampService} from '../_service/stamp.service';
+import {CdkDragDrop} from '@angular/cdk/drag-drop';
 
 @Component({
   selector: 'app-signature',
@@ -57,6 +58,10 @@ export class SignatureComponent implements OnInit, OnDestroy, AfterViewInit, OnC
 
   destroy() {
     this.close.emit();
+  }
+
+  drop(event: CdkDragDrop<string[]>) {
+    console.log(event.previousContainer === event.container);
   }
 
   ngOnDestroy(): void {

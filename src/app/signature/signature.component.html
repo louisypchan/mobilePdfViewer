@@ -10,9 +10,10 @@
       <i class="fal fa-window-close"></i>
     </a>
   </div>
-  <div class="d-flex flex-1 stamp-wrapper">
-    <div class="stamp" *ngFor="let stamp of stamps">
-      <div style="background-repeat: no-repeat; background-position: center; background-size: contain;" [ngStyle]="{width: viewport.width + 'px', height: viewport.height + 'px', backgroundImage: 'url(data:image/png;base64,' + stamp.stampBase64 + ')'}"></div>
+  <div class="d-flex flex-1 stamp-wrapper" cdkDropList cdkDropListSortingDisabled [cdkDropListConnectedTo]="'pdfViewer'" (cdkDropListDropped)="drop($event)">
+    <div class="stamp" *ngFor="let stamp of stamps" cdkDrag>
+      <div  style="background-repeat: no-repeat; background-position: center; background-size: contain;" [ngStyle]="{width: viewport.width + 'px', height: viewport.height + 'px', backgroundImage: 'url(data:image/png;base64,' + stamp.stampBase64 + ')'}">
+      </div>
     </div>
   </div>
 </div>

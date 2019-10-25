@@ -18,6 +18,7 @@ import BScroll from '@better-scroll/core';
 import ScrollBar from '@better-scroll/scroll-bar';
 import Zoom from '../plugins/zoom';
 import {ActivatedRoute} from '@angular/router';
+import {CdkDragDrop} from "@angular/cdk/drag-drop";
 
 @Component({
   selector: 'app-pdf-viewer',
@@ -410,5 +411,9 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   onRendered(id: number) {
     const index = this.pages.findIndex(page => page.id === id);
     this.pages[index].renderingState = 3;
+  }
+
+  drop(event: CdkDragDrop<string[]>) {
+    console.log(event.previousContainer === event.container);
   }
 }
