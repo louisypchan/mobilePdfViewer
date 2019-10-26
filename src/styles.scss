@@ -145,3 +145,8 @@ body {
 .cdk-drag-preview {
   z-index: 20000 !important;
 }
+
+.cdk-drag-placeholder {
+  opacity: 0 !important;
+  display: none !important;
+}

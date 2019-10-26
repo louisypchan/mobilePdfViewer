@@ -1,5 +1,5 @@
 import {
-  AfterViewInit,
+  AfterViewInit, ChangeDetectorRef,
   Component,
   EventEmitter,
   Input,
@@ -12,9 +12,8 @@ import {
 import {Viewport} from '../_model/Viewport';
 import {PdfService} from '../_service/pdf.service';
 import {Utils} from '../_util';
-import {Stamp} from '../_model/Stamp';
 import {StampService} from '../_service/stamp.service';
-import {CdkDragDrop} from '@angular/cdk/drag-drop';
+import {CdkDragStart} from '@angular/cdk/drag-drop';
 
 @Component({
   selector: 'app-signature',
@@ -26,18 +25,17 @@ export class SignatureComponent implements OnInit, OnDestroy, AfterViewInit, OnC
   w: number;
   h: number;
   viewport: Viewport; // signature width/height
-  stamps: Stamp[];
   @Input() scale: number;
   @Output() close = new EventEmitter();
 
-  constructor(private pdfService: PdfService, private stampService: StampService) { }
+  constructor(public pdfService: PdfService, private stampService: StampService, private ref: ChangeDetectorRef) { }
 
   ngOnInit() {
     this.reset();
     window.addEventListener('resize', this.reset.bind(this), false);
     this.stampService.getStamps('demo')
       .subscribe(result => {
-        this.stamps = result.data.stampList;
+        this.pdfService.stamps = result.data.stampList;
       });
   }
 
@@ -60,8 +58,14 @@ export class SignatureComponent implements OnInit, OnDestroy, AfterViewInit, OnC
     this.close.emit();
   }
 
-  drop(event: CdkDragDrop<string[]>) {
-    console.log(event.previousContainer === event.container);
+  dragStart(event: CdkDragStart, index: number) {
+    this.pdfService.stamps[index].active = false;
+    this.ref.detectChanges();
+  }
+
+  dragEnd(event: CdkDragStart, index: number) {
+    this.pdfService.stamps[index].active = true;
+    this.ref.detectChanges();
   }
 
   ngOnDestroy(): void {

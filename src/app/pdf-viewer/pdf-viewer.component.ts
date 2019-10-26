@@ -414,6 +414,8 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   drop(event: CdkDragDrop<string[]>) {
-    console.log(event.previousContainer === event.container);
+    if (event.previousContainer !== event.container && event.isPointerOverContainer) {
+      console.log(this.pdfService.stamps);
+    }
   }
 }

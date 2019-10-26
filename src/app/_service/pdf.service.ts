@@ -1,5 +1,6 @@
 import {Injectable, Input} from '@angular/core';
 import {Subject} from 'rxjs';
+import {Stamp} from "../_model/Stamp";
 
 @Injectable({
   providedIn: 'root'
@@ -25,6 +26,7 @@ export class PdfService {
   public renderHighestPriority = new Subject();
   public scrollToBotoom = new Subject();
   public scrollToTop = new Subject();
+  public stamps: Stamp[];
 
   constructor() {
     this.scale = 1;
