@@ -138,6 +138,16 @@ body {
   flex: 1;
 }
 
+.img-container {
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+
+  &.bg-light {
+    background-color: rgba(255, 97, 97, 0.24) !important;
+  }
+}
+
 .cdk-overlay-container {
   z-index: 10000 !important;
 }

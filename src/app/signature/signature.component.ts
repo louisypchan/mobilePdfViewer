@@ -59,12 +59,12 @@ export class SignatureComponent implements OnInit, OnDestroy, AfterViewInit, OnC
   }
 
   dragStart(event: CdkDragStart, index: number) {
-    this.pdfService.stamps[index].active = false;
+    this.pdfService.stamps[index].dragging = true;
     this.ref.detectChanges();
   }
 
   dragEnd(event: CdkDragStart, index: number) {
-    this.pdfService.stamps[index].active = true;
+    this.pdfService.stamps[index].dragging = false;
     this.ref.detectChanges();
   }
 

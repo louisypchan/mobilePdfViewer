@@ -12,9 +12,10 @@
   </div>
   <div class="d-flex flex-1 stamp-wrapper">
     <div class="stamp" *ngFor="let stamp of pdfService.stamps; index as i;" cdkDropList cdkDropListSortingDisabled [cdkDropListConnectedTo]="'pdfViewer'" [cdkDropListData]="pdfService.stamps">
-      <div *ngIf="!stamp.active" style="background-repeat: no-repeat; background-position: center; background-size: contain;" [ngStyle]="{width: viewport.width + 'px', height: viewport.height + 'px', backgroundImage: 'url(data:image/png;base64,' + stamp.stampBase64 + ')'}">
+      <div *ngIf="stamp.dragging" class="img-container" [ngStyle]="{width: viewport.width + 'px', height: viewport.height + 'px', backgroundImage: 'url(data:image/png;base64,' + stamp.stampBase64 + ')'}">
       </div>
-      <div cdkDrag (cdkDragStarted)="dragStart($event, i)" (cdkDragEnded)="dragEnd($event, i)" style="background-repeat: no-repeat; background-position: center; background-size: contain;" [ngStyle]="{width: viewport.width + 'px', height: viewport.height + 'px', backgroundImage: 'url(data:image/png;base64,' + stamp.stampBase64 + ')'}">
+      <div cdkDrag (cdkDragStarted)="dragStart($event, i)" (cdkDragEnded)="dragEnd($event, i)" class="img-container" [ngStyle]="{width: viewport.width + 'px', height: viewport.height + 'px', backgroundImage: 'url(data:image/png;base64,' + stamp.stampBase64 + ')'}">
+<!--        <div *cdkDragPreview class="img-container bg-light" [ngStyle]="{width: viewport.width + 'px', height: viewport.height + 'px', backgroundImage: 'url(data:image/png;base64,' + stamp.stampBase64 + ')'}"></div>-->
       </div>
     </div>
   </div>

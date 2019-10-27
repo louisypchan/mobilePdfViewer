@@ -5,6 +5,14 @@
 
   .pdfViewer {
     //transition: transform 200ms ease;
+
+    .stamp {
+      position: absolute;
+      z-index: 15000;
+      display: flex;
+      align-items: center;
+      background-color: rgba(255, 97, 97, 0.12);
+    }
   }
 }
 

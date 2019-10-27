@@ -15,6 +15,7 @@ export class PdfService {
   public mc: any;
 
   private SCALE: number;
+  private PREVIEWSCALE: number;
 
   private docScale: number;
   private pdfDocument: any;
@@ -29,7 +30,7 @@ export class PdfService {
   public stamps: Stamp[];
 
   constructor() {
-    this.scale = 1;
+    this.scale = 2;
     this.pageNum = 1;
   }
 
@@ -87,5 +88,13 @@ export class PdfService {
   }
   public get metadata() {
     return this.pdfMetadata;
+  }
+
+  @Input()
+  public set previewScale(scale: number) {
+    this.PREVIEWSCALE = scale;
+  }
+  public get previewScale() {
+    return this.PREVIEWSCALE;
   }
 }

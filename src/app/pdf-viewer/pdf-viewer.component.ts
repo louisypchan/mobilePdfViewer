@@ -19,6 +19,7 @@ import ScrollBar from '@better-scroll/scroll-bar';
 import Zoom from '../plugins/zoom';
 import {ActivatedRoute} from '@angular/router';
 import {CdkDragDrop} from "@angular/cdk/drag-drop";
+import {Stamp} from "../_model/Stamp";
 
 @Component({
   selector: 'app-pdf-viewer',
@@ -33,7 +34,6 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   pages: Page[];
   currentPage: number; //
   pagesCount: number;
-  scale: number; // unknown
   pagesRequests: any[];
   // @ts-ignore
   @ViewChild('pdfViewer') pdfViewer: ElementRef;
@@ -42,10 +42,13 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   @Output() docReady = new EventEmitter();
   @Output() onscroll = new EventEmitter<any>();
   @Output() bsReady = new EventEmitter<any>();
+  stamps: Stamp[];
+  offsetHeight: number;
 
   constructor(private el: ElementRef, public pdfService: PdfService, private zone: NgZone, private route: ActivatedRoute) { }
 
   ngOnInit() {
+    this.stamps = [];
     BScroll.use(ScrollBar);
     BScroll.use(Zoom);
     if (!this.renderType) {
@@ -55,6 +58,7 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     this.container = this.el.nativeElement.children[1];
+    this.offsetHeight = document.getElementById('title').offsetHeight;
     this.pdfService.renderHighestPriority.subscribe({
       next: () => {
         this.renderHighestPriority(null);
@@ -77,8 +81,8 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
     this.pages = [];
     this.currentPage = 1;
     this.pagesCount = 1;
-    this.scale = 0;
     this.pagesRequests = [];
+    this.pdfService.previewScale = +(this.pdfService.scale + '');
   }
 
   private initPages() {
@@ -364,6 +368,7 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   zoomEnd(e) {
     requestAnimationFrame(() => {
       const pageIndex = this.getPageIndexFromLocation(e.y) + 1;
+      this.pdfService.previewScale = +(this.pdfService.scale + '');
       this.pdfService.scale = e.scale;
       this.pages[pageIndex].scale = this.pdfService.scale;
     });
@@ -394,13 +399,14 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private onDoubleTap(e) {
-    if (this.pdfService.scale > 1) {
-      this.pdfService.scale--;
+    let scale = this.pdfService.scale;
+    if (scale > 1) {
+      scale--;
     } else {
-      this.pdfService.scale++;
+      scale++;
     }
     // this.pages[pageIndex].scale = this.pdfService.scale;
-    this.bs.zoomTo(this.pdfService.scale, e.center.x, e.center.y);
+    this.bs.zoomTo(scale, e.center.x, e.center.y);
   }
 
   onRendering(id: number) {
@@ -415,7 +421,28 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
 
   drop(event: CdkDragDrop<string[]>) {
     if (event.previousContainer !== event.container && event.isPointerOverContainer) {
-      console.log(this.pdfService.stamps);
+      const stamp = JSON.parse(JSON.stringify(this.pdfService.stamps[event.currentIndex]));
+      const rect = event.item.getRootElement().getBoundingClientRect();
+      let left = rect.left + event.distance.x - this.bs.x;
+      let top = rect.top + event.distance.y - this.bs.y;
+      left = left / this.pdfService.scale;
+      top = top / this.pdfService.scale - this.offsetHeight;
+      // const scaled = this.pdfService.scale / this.pdfService.previewScale;
+      // left = 0 - this.bs.getNewPos(left, 2, this.bs.scroller.scrollBehaviorX, true);
+      // top = 0 - this.bs.getNewPos(top, 2, this.bs.scroller.scrollBehaviorY, true);
+      // if (left < 0) {
+      //   left = 0;
+      // }
+      // if (Math.abs(top) - Math.abs(this.bs.scroller.scrollBehaviorY.maxScrollPos) < 0 ) {
+      //   //
+      // }
+      stamp.viewport = {
+        width: rect.width,
+        height: rect.height,
+        left,
+        top
+      };
+      this.stamps.push(stamp);
     }
   }
 }

@@ -46,6 +46,9 @@ export default class Zoom {
     this.bs.proxy([{
       key: 'zoomTo',
       sourceKey: 'plugins.zoom.zoomTo'
+    }, {
+      key: 'getNewPos',
+      sourceKey: 'plugins.zoom.getNewPos'
     }]);
     this.bs.registerType(['beforeZoom', 'afterZoom']);
     this.options = this.bs.options.zoom as Partial<ZoomConfig>;
@@ -117,7 +120,7 @@ export default class Zoom {
 
   private zoom(e: TouchEvent) {
     const currentDistance = this.getFingerDistance(e);
-    const currentScale = (currentDistance / this.startDistance) * this.startScale;
+    const currentScale = this.scaleCure((currentDistance / this.startDistance) * this.startScale);
     this.scaleTo(currentScale, this.pos, this.startScale, 0);
   }
 
@@ -204,7 +207,7 @@ export default class Zoom {
     return scale;
   }
 
-  private getNewPos(origin: number, scaled: number, scrollBehavior: Behavior, fixInBound?: boolean) {
+  getNewPos(origin: number, scaled: number, scrollBehavior: Behavior, fixInBound?: boolean) {
     let newPos = origin - origin * scaled + scrollBehavior.startPos;
     if (fixInBound) {
       //
