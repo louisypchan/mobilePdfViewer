@@ -30,7 +30,7 @@ export class PdfService {
   public stamps: Stamp[];
 
   constructor() {
-    this.scale = 2;
+    this.scale = 1;
     this.pageNum = 1;
   }
 

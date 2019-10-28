@@ -11,7 +11,12 @@
       z-index: 15000;
       display: flex;
       align-items: center;
-      background-color: rgba(255, 97, 97, 0.12);
+      border: 2px solid transparent;
+      border-radius: 5px;
+      background-color: rgba(255, 97, 97, 0.1);
+      &.selected {
+        border: 2px dashed red;
+      }
     }
   }
 }
@@ -28,3 +33,12 @@
   background: rgba(0, 0, 0, .5);
 }
 
+.c-popover {
+  display: flex;
+  flex-direction: column;
+  background: #2e323a;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,.65);
+  padding: 5px;
+  margin: .5rem 0;
+}

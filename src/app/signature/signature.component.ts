@@ -59,12 +59,32 @@ export class SignatureComponent implements OnInit, OnDestroy, AfterViewInit, OnC
   }
 
   dragStart(event: CdkDragStart, index: number) {
+    const rect = event.source.getRootElement().getBoundingClientRect();
+    this.pdfService.stamps[index].viewport = {
+      width: rect.width,
+      height: rect.height,
+      left: rect.left,
+      top: rect.top
+    };
+    this.pdfService.stamps[index].bg = 'rgba(255, 97, 97, .12)';
     this.pdfService.stamps[index].dragging = true;
     this.ref.detectChanges();
   }
 
+  dragMove(event, index: number) {
+    this.pdfService.stamps[index].viewport.pip = {
+      x: event.pointerPosition.x - event.distance.x,
+      y: event.pointerPosition.y - event.distance.y
+    };
+    this.pdfService.stamps[index].viewport.pie = {
+      x: event.pointerPosition.x - event.distance.x - this.pdfService.stamps[index].viewport.left,
+      y: event.pointerPosition.y - event.distance.y - this.pdfService.stamps[index].viewport.top
+    };
+  }
+
   dragEnd(event: CdkDragStart, index: number) {
     this.pdfService.stamps[index].dragging = false;
+    this.pdfService.stamps[index].bg = null;
     this.ref.detectChanges();
   }
 

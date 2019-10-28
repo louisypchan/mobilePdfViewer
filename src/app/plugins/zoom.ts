@@ -15,6 +15,7 @@ interface ZoomConfig {
   start: number;
   min: number;
   max: number;
+  hts?: any;
 }
 
 interface Point {
@@ -71,6 +72,9 @@ export default class Zoom {
     this.addHook(scrollerIns.actions.hooks, 'start', (e: TouchEvent) => {
       if (e.touches && e.touches.length > 1) {
         this.zoomStart(e);
+      }
+      if (this.options.hts) {
+        this.options.hts();
       }
     });
     this.addHook(scrollerIns.actions.hooks, 'beforeMove', (e: TouchEvent) => {

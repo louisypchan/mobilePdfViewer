@@ -13,6 +13,7 @@ import { PdfViewerComponent } from './pdf-viewer/pdf-viewer.component';
 import { PdfPageComponent } from './pdf-page/pdf-page.component';
 import { PdfContentComponent } from './pdf-content/pdf-content.component';
 import { SignatureComponent } from './signature/signature.component';
+import { DragDirective } from './_directive/drag.directive';
 
 // add loaded flag to the img tag's parent
 // intersectionObserverPreset.finally =  ({element}) => {
@@ -26,7 +27,8 @@ import { SignatureComponent } from './signature/signature.component';
     PdfViewerComponent,
     PdfPageComponent,
     PdfContentComponent,
-    SignatureComponent
+    SignatureComponent,
+    DragDirective
   ],
   imports: [
     BrowserModule,

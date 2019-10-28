@@ -7,8 +7,8 @@ import {
   NgZone,
   OnDestroy,
   OnInit,
-  Output,
-  ViewChild
+  Output, QueryList,
+  ViewChild, ViewChildren
 } from '@angular/core';
 import * as pdfjsLib from 'pdfjs-dist/webpack';
 import {Page} from '../_model/Page';
@@ -18,8 +18,10 @@ import BScroll from '@better-scroll/core';
 import ScrollBar from '@better-scroll/scroll-bar';
 import Zoom from '../plugins/zoom';
 import {ActivatedRoute} from '@angular/router';
-import {CdkDragDrop} from "@angular/cdk/drag-drop";
-import {Stamp} from "../_model/Stamp";
+import {CdkDragDrop} from '@angular/cdk/drag-drop';
+import {Stamp} from '../_model/Stamp';
+import {Point} from '../_model/Point';
+import {SatPopover} from '@ncstate/sat-popover';
 
 @Component({
   selector: 'app-pdf-viewer',
@@ -37,6 +39,7 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   pagesRequests: any[];
   // @ts-ignore
   @ViewChild('pdfViewer') pdfViewer: ElementRef;
+  @ViewChildren('popover') popover: QueryList<SatPopover>;
   container: HTMLDivElement;
   bs: any;
   @Output() docReady = new EventEmitter();
@@ -44,6 +47,7 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   @Output() bsReady = new EventEmitter<any>();
   stamps: Stamp[];
   offsetHeight: number;
+  boundariesArray: number[];
 
   constructor(private el: ElementRef, public pdfService: PdfService, private zone: NgZone, private route: ActivatedRoute) { }
 
@@ -69,11 +73,16 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.pdfService.scrollToBotoom.complete();
+    this.pdfService.scrollToTop.complete();
     this.pdfService.scrollToBotoom.unsubscribe();
     this.pdfService.scrollToTop.unsubscribe();
     if (this.bs) {
+      this.bs.off('scroll', this.watchScroll.bind(this));
+      this.bs.off('afterZoom', this.zoomEnd.bind(this));
       this.bs.destory();
     }
+    this.pdfService.renderHighestPriority.complete();
     this.pdfService.renderHighestPriority.unsubscribe();
   }
 
@@ -173,11 +182,15 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
           zoom: {
             start: this.pdfService.scale,
             min: 1,
-            max: 3
+            max: 3,
+            hts: () => {
+              this.removeStampsStatus();
+            }
           }
         });
         this.bs.on('scroll', this.watchScroll, this);
         this.bs.on('afterZoom', this.zoomEnd, this);
+        // this.bs.on('touchEnd', this.removeStampsStatus, this);
         this.pdfService.scrollToTop.subscribe({
           next: () => {
             //
@@ -193,6 +206,15 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
         this.bsReady.emit();
         this.update({x: 0, y: 0});
       });
+    });
+  }
+
+  private removeStampsStatus() {
+    this.popover.forEach(p => {
+      p.close();
+    });
+    this.stamps.forEach(stamp => {
+      stamp.selected = false;
     });
   }
 
@@ -390,12 +412,12 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private getPageIndexFromLocation(y: number, offset: number = 0) {
-    const indexes = [];
+    this.boundariesArray = [];
     for (let i = 0; i < this.pagesCount; i++) {
       const viewBottom = (this.pages[i].minHeight * (i + 1) + 5 * i) * this.pdfService.scale;
-      indexes.push(viewBottom - offset);
+      this.boundariesArray.push(viewBottom - offset);
     }
-    return this.binarySearch(indexes, y, 0, this.pagesCount - 1);
+    return this.binarySearch(this.boundariesArray, y, 0, this.pagesCount - 1);
   }
 
   private onDoubleTap(e) {
@@ -419,29 +441,64 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
     this.pages[index].renderingState = 3;
   }
 
+  moveStamp(e: Point, index: number, popover: SatPopover) {
+    popover.close();
+    this.stamps[index].selected = false;
+    this.stamps[index].viewport.left = this.stamps[index].viewport.left + e.x;
+    this.stamps[index].viewport.top = this.stamps[index].viewport.top + e.y;
+  }
+
+  adjustStampBoundary(event: any, index: number, popover: SatPopover) {
+    if (event.dragEvent) {
+      const rect = event.source.getBoundingClientRect();
+      let [left, top] = [this.stamps[index].viewport.left, this.stamps[index].viewport.top];
+      let pageIndex = this.getPageIndexFromLocation(top * this.pdfService.scale) + 1;
+      // console.log(this.pdfViewer.nativeElement.getBoundingClientRect());
+      if (top < 0) {
+        top = 0;
+      }
+      if (top * this.pdfService.scale + rect.height > this.boundariesArray[this.boundariesArray.length - 1]) {
+        top = (this.boundariesArray[this.boundariesArray.length - 1] - rect.height) / this.pdfService.scale;
+      }
+      if (top * this.pdfService.scale + rect.height > this.boundariesArray[pageIndex]) {
+        // console.log(pageIndex);
+        if (top * this.pdfService.scale + rect.height / 2 - this.boundariesArray[pageIndex] > 0) {
+          top = (this.boundariesArray[pageIndex] + 5 * this.pdfService.scale) / this.pdfService.scale;
+          pageIndex = pageIndex + 1;
+        } else {
+          top = (this.boundariesArray[pageIndex] - rect.height) / this.pdfService.scale;
+        }
+      }
+      if (left < 0) {
+        left = 0;
+      }
+      if (left * this.pdfService.scale + rect.width > this.pages[pageIndex].minWidth * this.pdfService.scale) {
+        left = (this.pages[pageIndex].minWidth * this.pdfService.scale - rect.width) / this.pdfService.scale;
+      }
+      this.stamps[index].viewport.left = left;
+      this.stamps[index].viewport.top = top;
+    } else {
+      // touch event
+      this.stamps[index].selected = true;
+      popover.open();
+    }
+  }
+
+  removeStamp(index: number) {
+    this.stamps.splice(index, 1);
+  }
+
   drop(event: CdkDragDrop<string[]>) {
     if (event.previousContainer !== event.container && event.isPointerOverContainer) {
       const stamp = JSON.parse(JSON.stringify(this.pdfService.stamps[event.currentIndex]));
+      console.log(stamp);
       const rect = event.item.getRootElement().getBoundingClientRect();
       let left = rect.left + event.distance.x - this.bs.x;
       let top = rect.top + event.distance.y - this.bs.y;
       left = left / this.pdfService.scale;
       top = top / this.pdfService.scale - this.offsetHeight;
-      // const scaled = this.pdfService.scale / this.pdfService.previewScale;
-      // left = 0 - this.bs.getNewPos(left, 2, this.bs.scroller.scrollBehaviorX, true);
-      // top = 0 - this.bs.getNewPos(top, 2, this.bs.scroller.scrollBehaviorY, true);
-      // if (left < 0) {
-      //   left = 0;
-      // }
-      // if (Math.abs(top) - Math.abs(this.bs.scroller.scrollBehaviorY.maxScrollPos) < 0 ) {
-      //   //
-      // }
-      stamp.viewport = {
-        width: rect.width,
-        height: rect.height,
-        left,
-        top
-      };
+      stamp.viewport.left = left;
+      stamp.viewport.top = top;
       this.stamps.push(stamp);
     }
   }

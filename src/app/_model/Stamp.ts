@@ -7,5 +7,7 @@ export interface Stamp {
   stampName: string;
   active?: boolean;
   dragging?: boolean;
+  bg?: string;
   viewport?: Viewport;
+  selected?: boolean;
 }
