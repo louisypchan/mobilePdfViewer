@@ -24,7 +24,7 @@ export class SvComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.url = this.route.snapshot.queryParams.url || 'assets/wKhYFV1fhJGEA4FJAAAAADB1rU8208.pdf';
+    this.url = this.route.snapshot.queryParams.url || 'assets/compressed.tracemonkey-pldi-09.pdf';
     this.signatureType = +(this.route.snapshot.queryParams.st || 1 );
     this.isTop = true;
     this.isBottom = true;

@@ -1,6 +1,7 @@
 .viewer {
   position: absolute;
   width: 100%;
+  max-height: 100%;
 
   .pdfViewer {
     //transition: transform 200ms ease;
