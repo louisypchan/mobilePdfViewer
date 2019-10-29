@@ -1,7 +1,7 @@
 <div class="info">
   {{currentPage}}/{{pagesCount}}
 </div>
-<div id="pdfViewer" cdkDropList class="viewer" (cdkDropListDropped)="drop($event)">
+<div id="viewer" cdkDropList class="viewer" (cdkDropListDropped)="drop($event)">
   <div #pdfViewer class="pdfViewer">
     <ng-container *ngFor="let stamp of stamps; index as i">
       <div appDrag [satPopoverAnchor]="popover" (dragMoved)="moveStamp($event, i, popover)" (dragEnded)="adjustStampBoundary($event, i, popover)" class="stamp"  [class.selected]="stamp.selected" [ngStyle]="{width: stamp.viewport.width + 'px', height: stamp.viewport.height + 'px', top: stamp.viewport.top + 'px', left: stamp.viewport.left + 'px'}">
