@@ -451,35 +451,43 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
     this.stamps[index].viewport.top = this.stamps[index].viewport.top + e.y;
   }
 
+  private adjustBoundary(left: number, top: number, rect: DOMRect | ClientRect): Point {
+    let pageIndex = this.getPageIndexFromLocation(top * this.pdfService.scale) + 1;
+    // console.log(this.pdfViewer.nativeElement.getBoundingClientRect());
+    if (top < 0) {
+      top = 0;
+    }
+    if (top * this.pdfService.scale + rect.height > this.boundariesArray[this.boundariesArray.length - 1]) {
+      top = (this.boundariesArray[this.boundariesArray.length - 1] - rect.height) / this.pdfService.scale;
+    }
+    if (top * this.pdfService.scale + rect.height > this.boundariesArray[pageIndex]) {
+      // console.log(pageIndex);
+      if (top * this.pdfService.scale + rect.height / 2 - this.boundariesArray[pageIndex] > 0) {
+        top = (this.boundariesArray[pageIndex] + 5 * this.pdfService.scale) / this.pdfService.scale;
+        pageIndex = pageIndex + 1;
+      } else {
+        top = (this.boundariesArray[pageIndex] - rect.height) / this.pdfService.scale;
+      }
+    }
+    if (left < 0) {
+      left = 0;
+    }
+    if ( this.pages[pageIndex] && left * this.pdfService.scale + rect.width > this.pages[pageIndex].minWidth * this.pdfService.scale) {
+      left = (this.pages[pageIndex].minWidth * this.pdfService.scale - rect.width) / this.pdfService.scale;
+    }
+    return {
+      x: left,
+      y: top
+    };
+  }
+
   adjustStampBoundary(event: any, index: number, popover: SatPopover) {
     if (event.dragEvent) {
       const rect = event.source.getBoundingClientRect();
-      let [left, top] = [this.stamps[index].viewport.left, this.stamps[index].viewport.top];
-      let pageIndex = this.getPageIndexFromLocation(top * this.pdfService.scale) + 1;
-      // console.log(this.pdfViewer.nativeElement.getBoundingClientRect());
-      if (top < 0) {
-        top = 0;
-      }
-      if (top * this.pdfService.scale + rect.height > this.boundariesArray[this.boundariesArray.length - 1]) {
-        top = (this.boundariesArray[this.boundariesArray.length - 1] - rect.height) / this.pdfService.scale;
-      }
-      if (top * this.pdfService.scale + rect.height > this.boundariesArray[pageIndex]) {
-        // console.log(pageIndex);
-        if (top * this.pdfService.scale + rect.height / 2 - this.boundariesArray[pageIndex] > 0) {
-          top = (this.boundariesArray[pageIndex] + 5 * this.pdfService.scale) / this.pdfService.scale;
-          pageIndex = pageIndex + 1;
-        } else {
-          top = (this.boundariesArray[pageIndex] - rect.height) / this.pdfService.scale;
-        }
-      }
-      if (left < 0) {
-        left = 0;
-      }
-      if ( this.pages[pageIndex] && left * this.pdfService.scale + rect.width > this.pages[pageIndex].minWidth * this.pdfService.scale) {
-        left = (this.pages[pageIndex].minWidth * this.pdfService.scale - rect.width) / this.pdfService.scale;
-      }
-      this.stamps[index].viewport.left = left;
-      this.stamps[index].viewport.top = top;
+      const [left, top] = [this.stamps[index].viewport.left, this.stamps[index].viewport.top];
+      const point = this.adjustBoundary(left, top, rect);
+      this.stamps[index].viewport.left = point.x;
+      this.stamps[index].viewport.top = point.y;
     } else {
       // touch event
       this.stamps[index].selected = true;
@@ -500,8 +508,9 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
       let top = rect.top + event.distance.y - this.bs.y;
       left = left / this.pdfService.scale;
       top = top / this.pdfService.scale - this.offsetHeight;
-      stamp.viewport.left = left;
-      stamp.viewport.top = top;
+      const point = this.adjustBoundary(left, top, rect);
+      stamp.viewport.left = point.x;
+      stamp.viewport.top = point.y;
       this.stamps.push(stamp);
     }
   }
