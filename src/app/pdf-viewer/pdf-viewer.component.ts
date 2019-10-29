@@ -383,6 +383,7 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
 
   watchScroll(cords) {
     this.update(cords);
+    this.getPageIndexFromLocation(0 - cords.y);
     this.onscroll.emit({
       x: cords.x,
       y: cords.y,
@@ -395,6 +396,7 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
       const pageIndex = this.getPageIndexFromLocation(e.y) + 1;
       this.pdfService.previewScale = +(this.pdfService.scale + '');
       this.pdfService.scale = e.scale;
+      this.currentPage = pageIndex + 1;
       this.pages[pageIndex].scale = this.pdfService.scale;
     });
   }
