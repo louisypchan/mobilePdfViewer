@@ -15,7 +15,6 @@ import {Page} from '../_model/Page';
 import {PdfService} from '../_service/pdf.service';
 import Hammer from 'hammerjs';
 import BScroll from '@better-scroll/core';
-import ScrollBar from '@better-scroll/scroll-bar';
 import Zoom from '../plugins/zoom';
 import {ActivatedRoute} from '@angular/router';
 import {CdkDragDrop} from '@angular/cdk/drag-drop';
@@ -53,7 +52,6 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit() {
     this.stamps = [];
-    BScroll.use(ScrollBar);
     BScroll.use(Zoom);
     if (!this.renderType) {
       this.renderType = 'canvas';
@@ -477,7 +475,7 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
       if (left < 0) {
         left = 0;
       }
-      if (left * this.pdfService.scale + rect.width > this.pages[pageIndex].minWidth * this.pdfService.scale) {
+      if ( this.pages[pageIndex] && left * this.pdfService.scale + rect.width > this.pages[pageIndex].minWidth * this.pdfService.scale) {
         left = (this.pages[pageIndex].minWidth * this.pdfService.scale - rect.width) / this.pdfService.scale;
       }
       this.stamps[index].viewport.left = left;
