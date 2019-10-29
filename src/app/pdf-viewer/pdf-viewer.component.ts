@@ -126,6 +126,8 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
           renderingState: 0
         });
       }
+      // this.pages[0].pdfPage = pdfPage;
+      // this.pages[0].visible = true;
       this.pdfService.onAfterDraw.subscribe({
         next: () => {
           onePageRenderedCapability.resolve();
@@ -221,8 +223,11 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   private binarySearchFirstItem(items, condition) {
     let minIndex = 0;
     let maxIndex = items.length - 1;
-    if (items.length === 0 || !condition(maxIndex)) {
+    if (items.length === 0) {
       return items.length;
+    }
+    if (!condition(maxIndex)) {
+      return maxIndex;
     }
     while (minIndex < maxIndex) {
       const currentIndex = (minIndex + maxIndex) >> 1;
@@ -358,7 +363,7 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
       // disableAutoFetch: true,
       rangeChunkSize: 1024 * 1024,
       disableStream: true,
-      cMapUrl: `assets/cmaps`,
+      cMapUrl: `assets/cmaps/`,
     });
     loadingTask.onProgress = (progressData) => {
       console.log(progressData);
