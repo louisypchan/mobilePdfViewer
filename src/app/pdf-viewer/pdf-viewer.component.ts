@@ -495,8 +495,8 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
 
   drop(event: CdkDragDrop<string[]>) {
     if (event.previousContainer !== event.container && event.isPointerOverContainer) {
-      const stamp = JSON.parse(JSON.stringify(this.pdfService.stamps[event.currentIndex]));
-      console.log(stamp);
+      const index = this.pdfService.stamps.findIndex(s => s.stampId === event.item.getRootElement().getAttribute('title'));
+      const stamp = JSON.parse(JSON.stringify(this.pdfService.stamps[index]));
       const rect = event.item.getRootElement().getBoundingClientRect();
       let left = rect.left + event.distance.x - this.bs.x;
       let top = rect.top + event.distance.y - this.bs.y;

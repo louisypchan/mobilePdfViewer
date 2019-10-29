@@ -14,7 +14,7 @@
     <div class="stamp" *ngFor="let stamp of pdfService.stamps; index as i;" cdkDropList cdkDropListSortingDisabled [cdkDropListConnectedTo]="'viewer'" [cdkDropListData]="pdfService.stamps">
       <div *ngIf="stamp.dragging" class="img-container" [ngStyle]="{width: viewport.width + 'px', height: viewport.height + 'px', backgroundImage: 'url(data:image/png;base64,' + stamp.stampBase64 + ')'}">
       </div>
-      <div cdkDrag (cdkDragStarted)="dragStart($event, i)" (cdkDragMoved)="dragMove($event, i);" (cdkDragEnded)="dragEnd($event, i)" class="img-container" [ngStyle]="{backgroundColor: stamp.bg || 'transparent', width: viewport.width + 'px', height: viewport.height + 'px', backgroundImage: 'url(data:image/png;base64,' + stamp.stampBase64 + ')'}">
+      <div cdkDrag (cdkDragStarted)="dragStart($event, i)" [title]="stamp.stampId" (cdkDragMoved)="dragMove($event, i);" (cdkDragEnded)="dragEnd($event, i)" class="img-container" [ngStyle]="{backgroundColor: stamp.bg || 'transparent', width: viewport.width + 'px', height: viewport.height + 'px', backgroundImage: 'url(data:image/png;base64,' + stamp.stampBase64 + ')'}">
 <!--        <div *cdkDragPreview class="img-container bg-light" [ngStyle]="{width: viewport.width + 'px', height: viewport.height + 'px', backgroundImage: 'url(data:image/png;base64,' + stamp.stampBase64 + ')'}"></div>-->
       </div>
     </div>
