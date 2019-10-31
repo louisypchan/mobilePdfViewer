@@ -79,6 +79,7 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
     this.pdfService.scrollToTop.unsubscribe();
     if (this.bs) {
       this.bs.off('scroll', this.watchScroll.bind(this));
+      this.bs.off('beforeZoom', this.beforeZoom.bind(this));
       this.bs.off('afterZoom', this.zoomEnd.bind(this));
       this.bs.destory();
     }
@@ -191,6 +192,7 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
           }
         });
         this.bs.on('scroll', this.watchScroll, this);
+        this.bs.on('beforeZoom', this.beforeZoom, this);
         this.bs.on('afterZoom', this.zoomEnd, this);
         // this.bs.on('touchEnd', this.removeStampsStatus, this);
         this.pdfService.scrollToTop.subscribe({
@@ -209,6 +211,10 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
         this.update({x: 0, y: 0});
       });
     });
+  }
+
+  private beforeZoom() {
+    this.zooming = true;
   }
 
   private removeStampsStatus() {
@@ -499,6 +505,9 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   adjustStampBoundary(event: any, index: number, popover: SatPopover) {
+    if (this.zooming) {
+      return;
+    }
     if (event.dragEvent) {
       const rect = event.source.getBoundingClientRect();
       const [left, top] = [this.stamps[index].viewport.left, this.stamps[index].viewport.top];
