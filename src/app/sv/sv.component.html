@@ -1,8 +1,13 @@
 <div class="d-flex flex-column h-100">
-  <div class="infoWrapper" id="title">
+  <div class="infoWrapper" id="title" [satPopoverAnchor]="tp" (mouseover)="tp.open()">
     <div class="title">
       {{pdfService.name}}
     </div>
+    <sat-popover #tp horizontalAlign="center" verticalAlign="below">
+      <div>
+        {{pdfService.name}}
+      </div>
+    </sat-popover>
     <div style="border-left: 1px solid #ccc; height: 100%; margin: -5px 0;"></div>
   </div>
   <div class="d-flex flex-column flex-1 position-relative" style="overflow: hidden;">

@@ -221,6 +221,7 @@ export default class Zoom {
   }
 
   private scaleTo(scale: number, origin: Point, previewScale: number, timing?: number) {
+    // this.startScale = previewScale;
     this.currentScale = this.restrictScaleLimit(scale);
     const scaled = this.currentScale / previewScale;
     this.reset(this.currentScale);

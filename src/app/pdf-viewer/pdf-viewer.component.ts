@@ -47,11 +47,13 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   stamps: Stamp[];
   offsetHeight: number;
   boundariesArray: number[];
+  zooming: boolean;
 
   constructor(private el: ElementRef, public pdfService: PdfService, private zone: NgZone, private route: ActivatedRoute) { }
 
   ngOnInit() {
     this.stamps = [];
+    this.zooming = false;
     BScroll.use(Zoom);
     if (!this.renderType) {
       this.renderType = 'canvas';
@@ -361,7 +363,7 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
       // disableAutoFetch: true,
       rangeChunkSize: 1024 * 1024,
       disableStream: true,
-      cMapUrl: `assets/cmaps/`,
+      cMapUrl: `./assets/cmaps/`,
     });
     loadingTask.onProgress = (progressData) => {
       console.log(progressData);
@@ -375,10 +377,18 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private handleEvents() {
+    this.pdfViewer.nativeElement.addEventListener('transitionend', this.handleTransitionEnd.bind(this), false);
     this.pdfService.mc = new Hammer.Manager(this.container);
     // this.pdfService.mc.add(new Hammer.Pan({ threshold: 0, pointers: 1}));
     this.pdfService.mc.add(new Hammer.Tap({ event: 'doubletap', taps: 2 }));
     this.pdfService.mc.on('doubletap', this.onDoubleTap.bind(this));
+  }
+
+  private handleTransitionEnd() {
+    this.bs.enable();
+    if (this.zooming) {
+      this.zooming = false;
+    }
   }
 
   watchScroll(cords) {
@@ -426,11 +436,16 @@ export class PdfViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private onDoubleTap(e) {
+    if (this.zooming) {
+      return;
+    }
+    this.bs.disable();
+    this.zooming = true;
     let scale = this.pdfService.scale;
     if (scale > 1) {
-      scale--;
+      scale = 1;
     } else {
-      scale++;
+      scale = 2;
     }
     // this.pages[pageIndex].scale = this.pdfService.scale;
     this.bs.zoomTo(scale, e.center.x, e.center.y);
